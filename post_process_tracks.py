@@ -13,6 +13,20 @@ import pandas as pd
 from skimage.segmentation import expand_labels
 import cartopy.crs as ccrs
 
+def return_drop_list(state):
+
+	#Contains lists of stations to drop from each state. Generally either too high above sea level, or offshore.    
+    
+	assert state in ["qld","nsw","vic"]
+
+	if state=="qld":
+		return [41175, 200840, 200601, 200736, 200783, 200701, 200831, 200732, 200704, 200001,\
+				200283, 39122, 39059, 27058, 27054]
+	elif state=="vic":
+		return [83084, 86376, 79103, 82139, 86381, 85291, 83024, 83085, 79101, 86344]
+	elif state=="nsw":
+		return [56238, 72161, 56243, 63292, 70349, 62100, 71075, 71032, 200288, 200839]
+
 def plot_gust_storm_ts(aws_storms):
         
         #For a merged pandas dataframe, with storm and gust information, plot a time series for each radius
@@ -201,7 +215,7 @@ if __name__ == "__main__":
 	parser.add_argument('--min', type=int, help='The number of minutes to forward fill radar scan data with respect to one minute gusts. Defaults to 6 minutes', default=6)
 	parser.add_argument('--plot', type=str, help='Plot outputs? Defaults to False', default=False)
 	parser.add_argument('--plot_scan', type=int, help='Scan to plot, in %Y%m%d%H%M', default=0)
-	parser.add_argument('--plot_stn', type=str, help='Station to plot? Required if plot is True', default=None)
+	parser.add_argument('--plot_stn', type=str, help='Station to plot? Default is station with highest gust', default="none")
 	args = parser.parse_args()
 
 	file_id = args.fid
@@ -213,17 +227,17 @@ if __name__ == "__main__":
 	plot_scan = args.plot_scan
 	plot_stn = args.plot_stn
 	save = args.save
-	if plot=="True":
-		assert(plot_stn is not None)
 
 	################
 	# STATION INFO #
 	################
 	#Load station info
-	names = ["id", "stn_no", "district", "stn_name", "1", "2", "lat", "lon", "3", "4", "5", "6", "7", "8", \
-                        "9", "10", "11", "12", "13", "14", "15", "16"]
+	names = ["id", "stn_no", "district", "stn_name", "site_open", "site_close", "lat", "lon", "latlon_method", "state",\
+			"hgt_asl", "hgt_asl_baro", "wmo_idx", "y1", "y2", "comp%", "Y%", "N%", "W%", "S%", "I%", "#"]
 	stn_df = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/"+state+"_one_min_gust/HD01D_StnDet_*.txt")[0],\
                 names=names, header=0)
+	stn_df["y1"] = pd.to_numeric(stn_df.y1, errors="coerce")
+	stn_df["y2"] = pd.to_numeric(stn_df.y2, errors="coerce")
 
 	################
 	# STORM TRACKS #
@@ -234,6 +248,22 @@ if __name__ == "__main__":
 	grid = h5py.File("/g/data/eg3/ab4502/TINTobjects/"+file_id+".h5", "r")
 	#Add a "group_id" to the .csv file, which will be used to index the h5 file
 	storm_df["group_id"] = pd.DatetimeIndex(storm_df["time"]).strftime("%Y%m%d%H%M%S") + "/" + storm_df["uid"].astype(str)
+
+	#####################
+	# STATION SELECTION #
+	#####################
+	#Although we have gust data for the entire of each state (vic, qld, nsw), drop some stations (from stn_df, and later from
+	# the gust dataframe TODO) based on:
+	#   -> If the station is further than 100 km away from the radar
+	#   -> If the station is in the list *state*_drops contained in return_drop_list(state)
+	#   -> If the station does not have data for the time period
+	lat0 = grid.attrs['source_origin_latitude']
+	lon0 = grid.attrs['source_origin_longitude']
+	stn_df["dist_from_radar_km"] = latlon_dist(lat0, lon0, stn_df.lat.values, stn_df.lon.values)
+	stn_df = stn_df[(\
+			    np.in1d(stn_df.stn_no, return_drop_list(state), invert=True)) &\
+			    (stn_df.dist_from_radar_km <= 100) &\
+			    ( (stn_df.y1 <= int(year)) & (stn_df.y2 >= int(year) ) )]
 
 	#################
 	# GRID STATIONS #
@@ -251,8 +281,9 @@ if __name__ == "__main__":
         ###################
 	# FILL IN TRACKS  #
         ###################
-	#TODO: Should storm tracks be interpolated in time and space? Or should we just use the available instantaneous scans and throw
-	#   out gusts when there's no scan within X minutes?
+	#Currently, wind gusts are only considered if there is a radar scan within MIN minutes before the gust.
+	#Have been setting MIN to 10 minutes, as this is the longest time between scans in the openradar dataset.
+	#Could potentially consider interpolating the location of storms based on fitting a line to x/y coordinates.
 
         ##########################
 	# ASSIGN GUSTS TO STORMS #
@@ -263,34 +294,25 @@ if __name__ == "__main__":
 	aws = pd.read_csv("/g/data/eg3/ab4502/ExtremeWind/obs/aws/"+state+"_one_min_gust/"+year+".csv")
 	aws = aws.set_index(pd.DatetimeIndex(aws.dt_utc))
 	if stns == 0:
-		stns = np.unique(aws.stn_id.values)
+		stns = np.unique(stn_df.stn_no.values)
 	aws_storms = pd.merge(storm[np.in1d(storm.stn_no,stns)].groupby("stn_no").resample("1min").asfreq().ffill(limit=MIN).drop(columns=["stn_no","time"]),
 			aws[["stn_id","gust","q"]], how="inner", left_index=True, right_on=["stn_id","dt_utc"])
-	#aws_storms = pd.merge(storm.query("stn_no=="+str(stn)).resample("1min").asfreq().ffill(limit=MIN),\
-#		aws.query("stn_id=="+str(stn))[["gust","q"]], how="inner", left_index=True, right_index=True)
 	if save=="True":
 		aws_storms.to_csv("/g/data/eg3/ab4502/TINTobjects/"+file_id+"_aws.csv")
-
-	#TODO
-	#The tint tracking algorithm does not have any awareness of missing files. So might need to do some post-processing based on 
-	# loading level 2 data, which has an "isfile" variable indicating available data for each time step
-	#l2_files = np.sort(glob.glob("/g/data/rq0/admin/level_2_v2/"+rid+"/REFLECTIVITY/*"))
-	#l2_file_dates = np.array([dt.datetime.strptime(f.split("/")[8][3:11], "%Y%m%d") for f in l2_files])
-	#l2_target_files = l2_files[(l2_file_dates >= times[0]) & (l2_file_dates <= times[1])]
-	#l2_isfiles = xr.open_mfdataset("/g/data/rq0/admin/level_2_v2/50/REFLECTIVITY/50_200601*",\
-		#drop_variables=["x","reflectivity","y","longitude","latitude"])
 
 	###########################
 	# MISC PLOTTING FOR TESTS #
 	###########################
-
 	if plot:
-
 		#Plot gridded storm objects for a single scan, matched spatially with gust stations
 		if plot_scan == 0:
 			scan = 0
 		else:
 			scan = np.unique(aws_storms.loc[str(plot_scan), "scan"])[0]
+		if plot=="True":
+			if plot_stn == "none":
+				plot_stn = aws_storms.sort_values("gust",ascending=False).iloc[0]["stn_id"]
+
 		xlim = [x.min(), x.max()]; ylim=[y.min(), y.max()]
 		plt.figure(figsize=[18,5])
 		ax=plt.subplot(1,3,1,projection=ccrs.PlateCarree())
