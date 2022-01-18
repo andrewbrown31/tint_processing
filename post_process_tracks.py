@@ -17,7 +17,7 @@ def return_drop_list(state):
 
 	#Contains lists of stations to drop from each state. Generally either too high above sea level, or offshore.    
     
-	assert state in ["qld","nsw","vic"]
+	assert state in ["qld","nsw","vic","sa"]
 
 	if state=="qld":
 		return [41175, 200840, 200601, 200736, 200783, 200701, 200831, 200732, 200704, 200001,\
@@ -25,7 +25,9 @@ def return_drop_list(state):
 	elif state=="vic":
 		return [83084, 86376, 79103, 82139, 86381, 85291, 83024, 83085, 79101, 86344]
 	elif state=="nsw":
-		return [56238, 72161, 56243, 63292, 70349, 62100, 71075, 71032, 200288, 200839]
+		return [56238, 72161, 56243, 63292, 70349, 62100, 71075, 71032, 200288, 200839, 66196]
+	elif state=="sa":
+		return []
 
 def plot_gust_storm_ts(aws_storms):
         
@@ -99,10 +101,10 @@ def assign_stations(stn_df, storm_df, grid):
 	stns10 = pd.DataFrame(columns = stn_df.stn_no, index=storm_df.index, data=0)
 	stns20 = pd.DataFrame(columns = stn_df.stn_no, index=storm_df.index, data=0)
 	dist = pd.DataFrame(columns = stn_df.stn_no, index=storm_df.index, data=0)
-	stns0["uid"] = storm_df["uid"]; stns0["time"] = storm_df["time"]; stns0["scan"] = storm_df["scan"]; stns0["group_id"] = storm_df["group_id"]
-	stns10["uid"] = storm_df["uid"]; stns10["time"] = storm_df["time"]; stns10["scan"] = storm_df["scan"]; stns10["group_id"] = storm_df["group_id"]
-	stns20["uid"] = storm_df["uid"]; stns20["time"] = storm_df["time"]; stns20["scan"] = storm_df["scan"]; stns20["group_id"] = storm_df["group_id"]
-	dist["uid"] = storm_df["uid"]; dist["time"] = storm_df["time"]; dist["scan"] = storm_df["scan"]; dist["group_id"] = storm_df["group_id"]
+	stns0["uid"] = storm_df["uid"]; stns0["time"] = storm_df["time"]; stns0["scan"] = storm_df["scan"]; stns0["group_id"] = storm_df["group_id"]; stns0["field_max"] = storm_df["field_max"]
+	stns10["uid"] = storm_df["uid"]; stns10["time"] = storm_df["time"]; stns10["scan"] = storm_df["scan"]; stns10["group_id"] = storm_df["group_id"]; stns10["field_max"] = storm_df["field_max"]
+	stns20["uid"] = storm_df["uid"]; stns20["time"] = storm_df["time"]; stns20["scan"] = storm_df["scan"]; stns20["group_id"] = storm_df["group_id"]; stns20["field_max"] = storm_df["field_max"]
+	dist["uid"] = storm_df["uid"]; dist["time"] = storm_df["time"]; dist["scan"] = storm_df["scan"]; dist["group_id"] = storm_df["group_id"]; dist["field_max"] = storm_df["field_max"]
 	for s in tqdm(np.arange(storm_df.scan.max()+1)):
 		for u in np.unique(storm_df.query("scan=="+str(s)).uid):
 			if u >= 0:
@@ -117,19 +119,19 @@ def assign_stations(stn_df, storm_df, grid):
 	print("Matching wind gust stations to TINT objects spatially...")
 	isstorm = pd.DataFrame()
 	for stn in tqdm(stn_df.stn_no):
-		temp_df0 = pd.concat([stns0[[stn, "uid", "time", "scan","group_id"]], dist.rename(columns={stn:"dist"})["dist"]], axis=1).\
-				sort_values(by=[stn, "dist"], ascending=[False, True]).drop_duplicates("time", keep="first").\
-				rename(columns={stn:"in0km"})
-		temp_df10 = pd.concat([stns10[[stn, "uid", "time", "scan", "group_id"]], dist.rename(columns={stn:"dist"})["dist"]], axis=1).\
-				sort_values(by=[stn, "dist"], ascending=[False, True]).drop_duplicates("time", keep="first").\
-				rename(columns={stn:"in10km"})
-		temp_df20 = pd.concat([stns20[[stn, "uid", "time", "scan", "group_id"]], dist.rename(columns={stn:"dist"})["dist"]], axis=1).\
-				sort_values(by=[stn, "dist"], ascending=[False, True]).drop_duplicates("time", keep="first").\
-				rename(columns={stn:"in20km"})
+		temp_df0 = pd.concat([stns0[[stn, "uid", "time", "scan","group_id", "field_max"]], dist.rename(columns={stn:"dist"})["dist"]], axis=1).\
+				sort_values(by=[stn, "field_max"], ascending=[False, False]).drop_duplicates("time", keep="first").\
+				rename(columns={stn:"in0km","uid":"uid0"})
+		temp_df10 = pd.concat([stns10[[stn, "uid", "time", "scan", "group_id", "field_max"]], dist.rename(columns={stn:"dist"})["dist"]], axis=1).\
+				sort_values(by=[stn, "field_max"], ascending=[False, False]).drop_duplicates("time", keep="first").\
+				rename(columns={stn:"in10km","uid":"uid10"})
+		temp_df20 = pd.concat([stns20[[stn, "uid", "time", "scan", "group_id", "field_max"]], dist.rename(columns={stn:"dist"})["dist"]], axis=1).\
+				sort_values(by=[stn, "field_max"], ascending=[False, False]).drop_duplicates("time", keep="first").\
+				rename(columns={stn:"in20km","uid":"uid20"})
 		temp_df0["stn_no"] = stn
 		isstorm = pd.concat([isstorm,\
-		    pd.merge(pd.merge(temp_df0, temp_df10[["time","in10km"]], on="time"), temp_df20[["time","in20km"]], on="time")\
-			[["time","stn_no","group_id","scan","uid","dist","in0km","in10km","in20km"]]], axis=0)
+		    pd.merge(pd.merge(temp_df0, temp_df10[["time","uid10","in10km"]], on="time"), temp_df20[["time","uid20","in20km"]], on="time")\
+			[["time","stn_no","group_id","scan","uid0","uid10","uid20","dist","in0km","in10km","in20km"]]], axis=0)
 
 	return isstorm
 
@@ -167,7 +169,8 @@ def add_stn_ids(recon_grid, x, y, storm_df, stn_info, uid, scan, stns0, stns10, 
 	storm_x, storm_y = (np.where(recon_grid==1, x, np.nan).flatten(), np.where(recon_grid==1, y, np.nan).flatten())
 	storm_x = storm_x[~np.isnan(storm_x)]
 	storm_y = storm_y[~np.isnan(storm_y)]
-	dist.iloc[(stns0["uid"]==uid) & (stns0["scan"]==scan), 0:-4] =\
+        #The first N columns here is equal to N stations. The last 5 rows are equal to other stats. So, use iloc[x, 0:-5] to place station information.
+	dist.iloc[(stns0["uid"]==uid) & (stns0["scan"]==scan), 0:-5] =\
 		[round(np.min(latlon_dist(storm_y, storm_x, yp, xp)),3) for xp,yp in zip(stn_info["lon"].values, stn_info["lat"].values)]
 	r_km = [0, 10000, 20000]
 	r_gridpoints = r_km / grid_spacing
@@ -209,13 +212,14 @@ if __name__ == "__main__":
 	##########
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-fid', type=str, help='Define file_id from TINT, which is radar id + %Y%m%d + _ + %Y%m%d')
-	parser.add_argument('--state', type=str, help='State corresponsing to the radar location (vic, nsw, qld)')
+	parser.add_argument('--state', type=str, help='State corresponsing to the radar location (vic, nsw, qld, sa)')
 	parser.add_argument('--stns', type=int, help='A list of stations to get storms for. If blank, defaults to all stations', default=0, nargs="*")
 	parser.add_argument('--save', type=str, help='Save merged radar/AWS output? Defaults to False', default=False)
 	parser.add_argument('--min', type=int, help='The number of minutes to forward fill radar scan data with respect to one minute gusts. Defaults to 6 minutes', default=6)
 	parser.add_argument('--plot', type=str, help='Plot outputs? Defaults to False', default=False)
 	parser.add_argument('--plot_scan', type=int, help='Scan to plot, in %Y%m%d%H%M', default=0)
 	parser.add_argument('--plot_stn', type=str, help='Station to plot? Default is station with highest gust', default="none")
+	parser.add_argument('--max_stn_dist', type=int, help='The maximum distance from the radar to consider an AWS. Defaults to 100 km', default=100)
 	args = parser.parse_args()
 
 	file_id = args.fid
@@ -227,6 +231,7 @@ if __name__ == "__main__":
 	plot_scan = args.plot_scan
 	plot_stn = args.plot_stn
 	save = args.save
+	max_stn_dist = args.max_stn_dist
 
 	################
 	# STATION INFO #
@@ -245,6 +250,8 @@ if __name__ == "__main__":
 	#Load .csv TINT track output
 	storm_df = pd.read_csv("/g/data/eg3/ab4502/TINTobjects/"+file_id+".csv")
 	#Load h5 file from TINT output
+	#NOTE: The following line assumes that there was at least one storm on the date that is given to this script. A h5 file isn't saved otherwise.
+	    #Possible fix is to save a null h5 in that case
 	grid = h5py.File("/g/data/eg3/ab4502/TINTobjects/"+file_id+".h5", "r")
 	#Add a "group_id" to the .csv file, which will be used to index the h5 file
 	storm_df["group_id"] = pd.DatetimeIndex(storm_df["time"]).strftime("%Y%m%d%H%M%S") + "/" + storm_df["uid"].astype(str)
@@ -262,8 +269,12 @@ if __name__ == "__main__":
 	stn_df["dist_from_radar_km"] = latlon_dist(lat0, lon0, stn_df.lat.values, stn_df.lon.values)
 	stn_df = stn_df[(\
 			    np.in1d(stn_df.stn_no, return_drop_list(state), invert=True)) &\
-			    (stn_df.dist_from_radar_km <= 100) &\
+			    (stn_df.dist_from_radar_km <= max_stn_dist) &\
 			    ( (stn_df.y1 <= int(year)) & (stn_df.y2 >= int(year) ) )]
+	if stns == 0:
+		pass
+	else:
+	    stn_df = stn_df[np.in1d(stn_df.stn_no, stns)]
 
 	#################
 	# GRID STATIONS #

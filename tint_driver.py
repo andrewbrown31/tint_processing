@@ -55,7 +55,7 @@ def unpack_level1b(rid, times):
 		print("NO FILES FOUND FOR RID: "+rid+" AND TIMES "+times[0]+" "+times[-1])
 	file_dates = np.array([dt.datetime.strptime(f.split("/")[9].split("_")[1], "%Y%m%d") for f in files])
 	target_files = files[(file_dates >= times[0].replace(hour=0, minute=0)) & (file_dates <= times[1].replace(hour=0, minute=0))]
-	extract_to = "/scratch/eg3/ab4502/tint/"
+	extract_to = "/scratch/w40/ab4502/tint/"
 	for f in target_files:
 		with zipfile.ZipFile(f, "r") as zip_ref:
 			zip_ref.extractall(extract_to)
@@ -71,7 +71,7 @@ def track(rid, times, azi_shear, steiner, refl_name="corrected_reflectivity"):
         
     #Unpack gridded radar files. Create empty files based on missing files reported in Level 2
     unpack_level1b(rid, times)
-    grid_files = np.sort(glob.glob("/scratch/eg3/ab4502/tint/"+rid+"*_grid.nc"))
+    grid_files = np.sort(glob.glob("/scratch/w40/ab4502/tint/"+rid+"*_grid.nc"))
     file_dates = np.array([dt.datetime.strptime(f.split("/")[5].split("_")[1] + f.split("/")[5].split("_")[2],\
                     "%Y%m%d%H%M%S") for f in grid_files])
     target_files = grid_files[(file_dates >= times[0]) & (file_dates <= times[1])]
@@ -81,15 +81,15 @@ def track(rid, times, azi_shear, steiner, refl_name="corrected_reflectivity"):
 
     #If steiner is True, load the level 2 steiner data with xarray
     if steiner:
-        grid_files = []; i=0
+        steiner_grid_files = []; i=0
         path = "/g/data/rq0/admin/level_2_v2/"+str(rid)+"/STEINER/"
         while times[0] + dt.timedelta(days=1*i) <= times[1]:
             t = (times[0] + dt.timedelta(days=1*i)).strftime("%Y%m%d")
             grid_path = path + str(rid)+"_"+t+"_steiner.nc"
             if os.path.isfile(grid_path):
-                grid_files.append(grid_path)
+                steiner_grid_files.append(grid_path)
             i=i+1
-        steiner_grid = xr.open_mfdataset([f for f in grid_files], decode_times=False, preprocess=decode_radar_times).steiner.load()
+        steiner_grid = xr.open_mfdataset([f for f in steiner_grid_files], decode_times=False, preprocess=decode_radar_times).steiner.load()
     else:
         steiner_grid = False
 
@@ -108,6 +108,10 @@ def track(rid, times, azi_shear, steiner, refl_name="corrected_reflectivity"):
     tracks_obj.params["STEINER"]=steiner
     tracks_obj.params["AZH1"]=2
     tracks_obj.params["AZH2"]=6
+    tracks_obj.params["SEGMENTATION_METHOD"]="watershed"
+    tracks_obj.params["WATERSHED_THRESH"]=[30,40]
+    tracks_obj.params["WATERSHED_SMOOTHING"]=3
+    tracks_obj.params["WATERSHED_EROSION"]=0
     
     #Perform TINT tracking
     tracks_obj.get_tracks(grids, "/g/data/eg3/ab4502/TINTobjects/"+outname+".h5", steiner_grid)
@@ -133,7 +137,7 @@ if __name__ == "__main__":
 	if not ( (args.azi_shear=="True") | (args.azi_shear=="False") ):
 		raise ValueError("--azi_shear must be True or False")
 	if not ( (args.steiner=="True") | (args.steiner=="False") ):
-		raise ValueError("--azi_shear must be True or False")
+		raise ValueError("--steiner must be True or False")
 
 	track(args.rid, [dt.datetime.strptime(args.t1, "%Y%m%d%H%M"), dt.datetime.strptime(args.t2, "%Y%m%d%H%M")],\
 		args.azi_shear=="True", args.steiner=="True")
