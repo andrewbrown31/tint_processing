@@ -1,0 +1,13 @@
+This repository contains the following code and directories to analyse TINT output, created with a modified version of TINT (https://github.com/andrewbrown31/TINT)
+	tint_driver.py
+	post_process_tracks.py
+	tint_example.py
+	tint_example.ipynb
+	object_tracking_output_view.ipynb
+	tint_cases.ipynb
+	tint_cases.py
+	systematic_analysis/
+
+auto_case_driver/ is a directory which contains notebooks and routines used to analyse a set of 36 severe convective wind cases, which includes TINT output, 
+but also uses station observations, reanalysis data and lightning data. Reanalysis data, and some station and lightning data, has been processed using code from the 
+following repository: https://github.com/andrewbrown31/SCW-analysis
