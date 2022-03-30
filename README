@@ -8,6 +8,4 @@ This repository contains the following code and directories to analyse TINT outp
 	systematic_analysis/			(scripts and notbooks for long-term systematic analysis)
 	jobs_*/					(PBS jobs for running TINT over long-term data)
 
-auto_case_driver/ is a directory which contains , which includes TINT output, 
-but also uses station observations, reanalysis data and lightning data. Reanalysis data, and some station and lightning data, has been processed using code from the 
-following repository: https://github.com/andrewbrown31/SCW-analysis
+Reanalysis data, and some station and lightning data, has been processed using code from the following repository: https://github.com/andrewbrown31/SCW-analysis
