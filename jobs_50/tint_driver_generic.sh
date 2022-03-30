@@ -6,7 +6,7 @@
 #PBS -l ncpus=1
 #PBS -o /home/548/ab4502/working/ExtremeWind/jobs/messages/tint_driver_50_YYYYMMDDHHMM1.o 
 #PBS -e /home/548/ab4502/working/ExtremeWind/jobs/messages/tint_driver_50_YYYYMMDDHHMM1.e
-#PBS -l storage=gdata/eg3+gdata/rq0
+#PBS -l storage=gdata/eg3+gdata/rq0+scratch/w40
  
 #Set up conda/shell environments 
 source activate radar

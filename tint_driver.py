@@ -50,10 +50,10 @@ def decode_radar_times(f):
 def unpack_level1b(rid, times):
 	#Unzip level1b data between times[0] and times[1], and save to scratch
 	assert times[0].year == times[1].year, "Times range must be within calendar year"
-	files = np.array(glob.glob("/g/data/rq0/admin/level_1b_v2/"+rid+"/grid/"+str(times[0].year)+"/*.zip"))
+	files = np.array(glob.glob("/g/data/rq0/level_1b/"+rid+"/grid/"+str(times[0].year)+"/*.zip"))
 	if len(files) == 0:
 		print("NO FILES FOUND FOR RID: "+rid+" AND TIMES "+times[0]+" "+times[-1])
-	file_dates = np.array([dt.datetime.strptime(f.split("/")[9].split("_")[1], "%Y%m%d") for f in files])
+	file_dates = np.array([dt.datetime.strptime(f.split("/")[8].split("_")[1], "%Y%m%d") for f in files])
 	target_files = files[(file_dates >= times[0].replace(hour=0, minute=0)) & (file_dates <= times[1].replace(hour=0, minute=0))]
 	extract_to = "/scratch/w40/ab4502/tint/"
 	for f in target_files:
@@ -63,6 +63,28 @@ def unpack_level1b(rid, times):
 def grid_gen(target_files):
 	for fn in target_files:
 		yield pyart.io.read_grid(fn)
+
+def remove_bad_files(files):
+
+    bad_file_list = ["/scratch/w40/ab4502/tint/71_20121206_003105_grid.nc",\
+			"/scratch/w40/ab4502/tint/71_20121206_003705_grid.nc",\
+			"/scratch/w40/ab4502/tint/71_20171119_080031_grid.nc",\
+			"/scratch/w40/ab4502/tint/71_20171119_080628_grid.nc",\
+			"/scratch/w40/ab4502/tint/71_20171119_081228_grid.nc",\
+			"/scratch/w40/ab4502/tint/71_20171119_081828_grid.nc",\
+			"/scratch/w40/ab4502/tint/71_20171119_082428_grid.nc",\
+			"/scratch/w40/ab4502/tint/71_20171119_083028_grid.nc",\
+			"/scratch/w40/ab4502/tint/71_20171119_083628_grid.nc",\
+			"/scratch/w40/ab4502/tint/71_20171119_084228_grid.nc",\
+			"/scratch/w40/ab4502/tint/71_20171119_084828_grid.nc",\
+			"/scratch/w40/ab4502/tint/71_20171119_085430_grid.nc",\
+			"/scratch/w40/ab4502/tint/71_20171119_090028_grid.nc",\
+			"/scratch/w40/ab4502/tint/71_20171119_090628_grid.nc",\
+			"/scratch/w40/ab4502/tint/71_20171119_091228_grid.nc",\
+			"/scratch/w40/ab4502/tint/71_20171119_091831_grid.nc",\
+			"/scratch/w40/ab4502/tint/71_20171119_092428_grid.nc",\
+			"/scratch/w40/ab4502/tint/71_20171119_093028_grid.nc"]
+    return files[[~np.in1d(files, bad_file_list)]]
 
 def track(rid, times, azi_shear, steiner, refl_name="corrected_reflectivity"):
     
@@ -75,54 +97,61 @@ def track(rid, times, azi_shear, steiner, refl_name="corrected_reflectivity"):
     file_dates = np.array([dt.datetime.strptime(f.split("/")[5].split("_")[1] + f.split("/")[5].split("_")[2],\
                     "%Y%m%d%H%M%S") for f in grid_files])
     target_files = grid_files[(file_dates >= times[0]) & (file_dates <= times[1])]
+    target_files = remove_bad_files(target_files)
 
-    #Load in a format ready to send to TINT
-    grids = grid_gen(target_files)
+    if len(target_files) > 0:
 
-    #If steiner is True, load the level 2 steiner data with xarray
-    if steiner:
-        steiner_grid_files = []; i=0
-        path = "/g/data/rq0/admin/level_2_v2/"+str(rid)+"/STEINER/"
-        while times[0] + dt.timedelta(days=1*i) <= times[1]:
-            t = (times[0] + dt.timedelta(days=1*i)).strftime("%Y%m%d")
-            grid_path = path + str(rid)+"_"+t+"_steiner.nc"
-            if os.path.isfile(grid_path):
-                steiner_grid_files.append(grid_path)
-            i=i+1
-        steiner_grid = xr.open_mfdataset([f for f in steiner_grid_files], decode_times=False, preprocess=decode_radar_times).steiner.load()
-    else:
-        steiner_grid = False
-
-    #Initialise TINT tracks and set tracking parameters
-    tracks_obj = Cell_tracks(refl_name)
-    tracks_obj.params["FIELD_THRESH"]=30
-    tracks_obj.params["MIN_SIZE"]=15
-    tracks_obj.params["MIN_VOL"]=30
-    tracks_obj.params["MIN_HGT"]=2
-    tracks_obj.params["MAX_DISPARITY"]=60
-    tracks_obj.params["SEARCH_MARGIN"]=10000
-    tracks_obj.params["SKIMAGE_PROPS"]=["eccentricity","major_axis_length","minor_axis_length","bbox"]
-    tracks_obj.params["FIELD_DEPTH"]=5
-    tracks_obj.params["LOCAL_MAX_DIST"]=4
-    tracks_obj.params["AZI_SHEAR"]=azi_shear
-    tracks_obj.params["STEINER"]=steiner
-    tracks_obj.params["AZH1"]=2
-    tracks_obj.params["AZH2"]=6
-    tracks_obj.params["SEGMENTATION_METHOD"]="watershed"
-    tracks_obj.params["WATERSHED_THRESH"]=[30,40]
-    tracks_obj.params["WATERSHED_SMOOTHING"]=3
-    tracks_obj.params["WATERSHED_EROSION"]=0
+        #Load in a format ready to send to TINT
+        grids = grid_gen(target_files)
     
-    #Perform TINT tracking
-    tracks_obj.get_tracks(grids, "/g/data/eg3/ab4502/TINTobjects/"+outname+".h5", steiner_grid)
-    tracks_obj.tracks.to_csv("/g/data/eg3/ab4502/TINTobjects/"+outname+".csv")    
+        #If steiner is True, load the level 2 steiner data with xarray
+        if steiner:
+            steiner_grid_files = []; i=0
+            path = "/g/data/rq0/level_2/"+str(rid)+"/STEINER/"
+            while times[0] + dt.timedelta(days=1*i) <= times[1]:
+                t = (times[0] + dt.timedelta(days=1*i)).strftime("%Y%m%d")
+                grid_path = path + str(rid)+"_"+t+"_steiner.nc"
+                if os.path.isfile(grid_path):
+                    steiner_grid_files.append(grid_path)
+                i=i+1
+            steiner_grid = xr.open_mfdataset([f for f in steiner_grid_files], decode_times=False, preprocess=decode_radar_times).steiner.load()
+        else:
+            steiner_grid = False
+    
+        #Initialise TINT tracks and set tracking parameters
+        tracks_obj = Cell_tracks(refl_name)
+        tracks_obj.params["FIELD_THRESH"]=30
+        tracks_obj.params["MIN_SIZE"]=15
+        tracks_obj.params["MIN_VOL"]=30
+        tracks_obj.params["MIN_HGT"]=2
+        tracks_obj.params["MAX_DISPARITY"]=60
+        tracks_obj.params["SEARCH_MARGIN"]=10000
+        tracks_obj.params["SKIMAGE_PROPS"]=["eccentricity","major_axis_length","minor_axis_length","bbox"]
+        tracks_obj.params["FIELD_DEPTH"]=5
+        tracks_obj.params["LOCAL_MAX_DIST"]=4
+        tracks_obj.params["AZI_SHEAR"]=azi_shear
+        tracks_obj.params["STEINER"]=steiner
+        tracks_obj.params["AZH1"]=2
+        tracks_obj.params["AZH2"]=6
+        tracks_obj.params["SEGMENTATION_METHOD"]="watershed"
+        tracks_obj.params["WATERSHED_THRESH"]=[30,40]
+        tracks_obj.params["WATERSHED_SMOOTHING"]=3
+        tracks_obj.params["WATERSHED_EROSION"]=0
+        
+        #Perform TINT tracking
+        tracks_obj.get_tracks(grids, "/g/data/eg3/ab4502/TINTobjects/"+outname+".h5", steiner_grid)
+        tracks_obj.tracks.to_csv("/g/data/eg3/ab4502/TINTobjects/"+outname+".csv")    
+    
+        #Write options to file
+        with open("/g/data/eg3/ab4502/TINTobjects/"+outname+".txt", "w") as f:
+            print(tracks_obj.params,"\n",tracks_obj.grid_size, file=f)
+    
+        #Clean up
+        _ = [os.remove(f) for f in target_files]
 
-    #Write options to file
-    with open("/g/data/eg3/ab4502/TINTobjects/"+outname+".txt", "w") as f:
-        print(tracks_obj.params,"\n",tracks_obj.grid_size, file=f)
+    else:
 
-    #Clean up
-    _ = [os.remove(f) for f in target_files]
+        print("INFO: NO RADAR FILES WITHIN THE GIVEN TIMES "+times[0].strftime("%Y-%m-%d")+" - "+times[1].strftime("%Y-%m-%d"))
 
 if __name__ == "__main__":
 

@@ -1,3 +1,4 @@
+import argparse
 import joblib
 from GadiClient import GadiClient
 import xarray as xr
@@ -8,6 +9,18 @@ import datetime as dt
 import numpy as np
 import tqdm
 import netCDF4 as nc
+
+def calc_bdsd(ds):
+    ds = ds.assign(bdsd = 1 / 
+                   ( 1 + np.exp( -(6.1e-02*ds["ebwd"] + 1.5e-01*ds["Umean800_600"] + 9.4e-01*ds["lr13"] + 3.9e-02*ds["rhmin13"] +
+                                   1.7e-02*ds["srhe_left"] +3.8e-01*ds["q_melting"] +4.7e-04*ds["eff_lcl"] - 1.3e+01 ) ) ) )
+    return ds
+
+def last_day_of_month(any_day):
+    # get close to the end of the month for any day, and add 4 days 'over'
+    next_month = any_day.replace(day=28) + dt.timedelta(days=4)
+    # subtract the number of remaining 'overage' days to get last day of current month, or said programattically said, the previous day of the first of next month
+    return next_month - dt.timedelta(days=next_month.day)    
 
 def latlon_dist(lat, lon, lats, lons):
 
@@ -84,6 +97,40 @@ def extract_era5_df(era5_subset, rad_lats, rad_lons,stn_list, summary):
 
 	return temp_df
 
+def load_lightning(fid):
+	yyyymmdd1 = fid.split("_")[1]
+	yyyymmdd2 = fid.split("_")[2]
+	start_t = dt.datetime(int(yyyymmdd1[0:4]), int(yyyymmdd1[4:6]), int(yyyymmdd1[6:8]))
+	end_t = dt.datetime(int(yyyymmdd2[0:4]), int(yyyymmdd2[4:6]), int(yyyymmdd2[6:8])) + dt.timedelta(days=1)
+
+	f = xr.open_dataset("/g/data/eg3/ab4502/ExtremeWind/ad_data/lightning/lightning_Australasia0.250000degree_6.00000hr_"+yyyymmdd1[0:4]+".nc",\
+	    decode_times=False)
+	f = f.assign_coords(time=[dt.datetime(int(yyyymmdd1[0:4]),1,1,0) + dt.timedelta(hours=int(i*6)) for i in f.time.values]).\
+		sel({"time":slice(start_t,end_t)})
+	f = f.assign_coords(lat=np.arange(f.lat.min(), f.lat.max() + 0.25, 0.25))
+	f = f.assign_coords(lon=np.arange(f.lon.min(), f.lon.max() + 0.25, 0.25))
+	f = f.resample({"time":"1H"}).nearest()
+	return f
+
+def extract_lightning_points(lightning, stn_lat, stn_lon, stn_list):
+
+	lon = lightning.lon.values
+	lat = lightning.lat.values
+	x, y = np.meshgrid(lon,lat)
+	df_out = pd.DataFrame()
+	for i in np.arange(len(stn_lat)):
+		dist_km = latlon_dist(stn_lat[i], stn_lon[i], y, x)
+		sliced = xr.where(dist_km<=50, lightning, np.nan)
+		temp = sliced.max(("lat","lon")).Lightning_observed.to_dataframe()
+		temp["points"] = i
+		df_out = pd.concat([df_out,temp], axis=0)
+
+	for p in np.arange(len(stn_list)):
+		df_out.loc[df_out.points==p,"stn_id"] = stn_list[p]
+	df_out = df_out.drop("points",axis=1)
+
+	return df_out
+
 def load_tint_aws_era5_lightning(fid, state, summary="max"):
 
 	#Load the AWS one-minute gust data with TINT storm object ID within 10 and 20 km
@@ -118,20 +165,60 @@ def load_tint_aws_era5_lightning(fid, state, summary="max"):
 	#Extract point data within 50 km of each station (mean, min and max)
 	era5_df = extract_era5_df(era5_subset, rad_lats, rad_lons,stn_list,summary)
 
-	#Merge AWS and ERA5
+	#Add lat lon info
+	era5_lat = []; era5_lon = []
+	for i in np.arange(len(stn_list)):
+		era5_lon.append(era5_subset.lon.values[np.argmin(abs(era5_subset.lon.values-stn_lon[i]))])
+		era5_lat.append(era5_subset.lat.values[np.argmin(abs(era5_subset.lat.values-stn_lat[i]))])
+	era5_df["era5_lat"] = era5_df.stn_id.map(dict(zip(stn_list,era5_lat)))
+	era5_df["era5_lon"] = era5_df.stn_id.map(dict(zip(stn_list,era5_lon)))
+
+	#Lightning data
+	#Merge ERA5 and Lightning hourly data, then merge the hourly data with one minute AWS/TINT data
+	year = int(fid.split("_")[1][0:4])
+	if year >= 2005:
+		lightning = load_lightning(fid)
+		lightning_df = extract_lightning_points(lightning, stn_lat, stn_lon, stn_list).reset_index()
+		era5_df = era5_df.merge(lightning_df, on=["time","stn_id"])
+	else:
+		era5_df["Lightning_observed"] = np.nan
 	aws_era5_tint = tint_df.merge(era5_df,left_on=["hour_floor","stn_id"], right_on=["time","stn_id"])
 
 	#Load clustering classification model saved by ~/working/observations/tint_processing/auto_case_driver/kmeans_and_cluster_eval.ipynb
-	#NOTE the normalisation might be different to the original model inputs, based on this larger set of data.
 	cluster_mod = joblib.load('/g/data/eg3/ab4502/figs/ExtremeWind/case_studies/cluster_model_era5.pkl')
+	cluster_input = pd.read_csv("/g/data/eg3/ab4502/figs/ExtremeWind/case_studies/cluster_input_era5.csv").drop(columns=["Unnamed: 0"])
 	input_df = (aws_era5_tint[["s06","qmean01","lr13","Umean06"]]\
-		   - aws_era5_tint[["s06","qmean01","lr13","Umean06"]].min(axis=0))\
-	    / (aws_era5_tint[["s06","qmean01","lr13","Umean06"]].max(axis=0) - \
-	       aws_era5_tint[["s06","qmean01","lr13","Umean06"]].min(axis=0))
+		   - cluster_input.min(axis=0))\
+	    / (cluster_input.max(axis=0) - \
+	       cluster_input.min(axis=0))
 	aws_era5_tint["cluster"] = cluster_mod.predict(input_df)
 
-	aws_era5_tint.to_csv("/g/data/eg3/ab4502/ExtremeWind/points/era5_aws_tint_"+fid+"_"+summary+".csv")
+	#NOTE Add BDSD
+	aws_era5_tint = calc_bdsd(aws_era5_tint)
+
+	#Save as pickle for fast i/o (compared with csv)
+	aws_era5_tint.to_pickle("/g/data/eg3/ab4502/ExtremeWind/points/era5_aws_tint_"+fid+"_"+summary+".pkl")
 
 if __name__ == "__main__":
 
-	pass
+	GadiClient()
+
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-year', type=str)
+	parser.add_argument('-month', type=str)
+	parser.add_argument('-rid', type=str)
+	parser.add_argument('-state', type=str)
+	parser.add_argument('-summary', type=str)
+	args = parser.parse_args()
+	year = args.year
+	month = args.month
+	rid = args.rid
+	state = args.state
+	summary = args.summary
+
+	date = dt.datetime(int(year), int(month), 1)
+	date2 = last_day_of_month(date)
+	fid1 = date.strftime("%Y%m%d")
+	fid2 = date2.strftime("%Y%m%d")
+	print(date)
+	load_tint_aws_era5_lightning(rid+"_"+fid1+"_"+fid2, state, summary=summary)

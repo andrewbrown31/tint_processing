@@ -17,7 +17,7 @@ def return_drop_list(state):
 
 	#Contains lists of stations to drop from each state. Generally either too high above sea level, or offshore.    
     
-	assert state in ["qld","nsw","vic","sa"]
+	assert state in ["qld","nsw","vic","sa","wa"]
 
 	if state=="qld":
 		return [41175, 200840, 200601, 200736, 200783, 200701, 200831, 200732, 200704, 200001,\
@@ -26,6 +26,8 @@ def return_drop_list(state):
 		return [83084, 86376, 79103, 82139, 86381, 85291, 83024, 83085, 79101, 86344]
 	elif state=="nsw":
 		return [56238, 72161, 56243, 63292, 70349, 62100, 71075, 71032, 200288, 200839, 66196]
+	elif state=="wa":
+		return [9091,9193,9255,9256]
 	elif state=="sa":
 		return []
 
@@ -119,19 +121,20 @@ def assign_stations(stn_df, storm_df, grid):
 	print("Matching wind gust stations to TINT objects spatially...")
 	isstorm = pd.DataFrame()
 	for stn in tqdm(stn_df.stn_no):
-		temp_df0 = pd.concat([stns0[[stn, "uid", "time", "scan","group_id", "field_max"]], dist.rename(columns={stn:"dist"})["dist"]], axis=1).\
+		temp_df0 = pd.concat([stns0[[stn, "uid", "time", "scan","group_id", "field_max"]], dist.rename(columns={stn:"dist0km"})["dist0km"]], axis=1).\
 				sort_values(by=[stn, "field_max"], ascending=[False, False]).drop_duplicates("time", keep="first").\
 				rename(columns={stn:"in0km","uid":"uid0"})
-		temp_df10 = pd.concat([stns10[[stn, "uid", "time", "scan", "group_id", "field_max"]], dist.rename(columns={stn:"dist"})["dist"]], axis=1).\
+		temp_df10 = pd.concat([stns10[[stn, "uid", "time", "scan", "group_id", "field_max"]], dist.rename(columns={stn:"dist10km"})["dist10km"]], axis=1).\
 				sort_values(by=[stn, "field_max"], ascending=[False, False]).drop_duplicates("time", keep="first").\
 				rename(columns={stn:"in10km","uid":"uid10"})
-		temp_df20 = pd.concat([stns20[[stn, "uid", "time", "scan", "group_id", "field_max"]], dist.rename(columns={stn:"dist"})["dist"]], axis=1).\
+		temp_df20 = pd.concat([stns20[[stn, "uid", "time", "scan", "group_id", "field_max"]], dist.rename(columns={stn:"dist20km"})["dist20km"]], axis=1).\
 				sort_values(by=[stn, "field_max"], ascending=[False, False]).drop_duplicates("time", keep="first").\
 				rename(columns={stn:"in20km","uid":"uid20"})
 		temp_df0["stn_no"] = stn
+
 		isstorm = pd.concat([isstorm,\
-		    pd.merge(pd.merge(temp_df0, temp_df10[["time","uid10","in10km"]], on="time"), temp_df20[["time","uid20","in20km"]], on="time")\
-			[["time","stn_no","group_id","scan","uid0","uid10","uid20","dist","in0km","in10km","in20km"]]], axis=0)
+		    pd.merge(pd.merge(temp_df0, temp_df10[["time","uid10","in10km","dist10km"]], on="time"), temp_df20[["time","uid20","in20km","dist20km"]], on="time")\
+			[["time","stn_no","group_id","scan","uid0","uid10","uid20","dist0km","dist10km","dist20km","in0km","in10km","in20km"]]], axis=0)
 
 	return isstorm
 
@@ -215,7 +218,7 @@ if __name__ == "__main__":
 	parser.add_argument('--state', type=str, help='State corresponsing to the radar location (vic, nsw, qld, sa)')
 	parser.add_argument('--stns', type=int, help='A list of stations to get storms for. If blank, defaults to all stations', default=0, nargs="*")
 	parser.add_argument('--save', type=str, help='Save merged radar/AWS output? Defaults to False', default=False)
-	parser.add_argument('--min', type=int, help='The number of minutes to forward fill radar scan data with respect to one minute gusts. Defaults to 6 minutes', default=6)
+	parser.add_argument('--min', type=int, help='The number of minutes to forward fill radar scan data with respect to one minute gusts. Defaults to 6 minutes', default=10)
 	parser.add_argument('--plot', type=str, help='Plot outputs? Defaults to False', default=False)
 	parser.add_argument('--plot_scan', type=int, help='Scan to plot, in %Y%m%d%H%M', default=0)
 	parser.add_argument('--plot_stn', type=str, help='Station to plot? Default is station with highest gust', default="none")
@@ -288,6 +291,9 @@ if __name__ == "__main__":
 	#############################
 	isstorm = assign_stations(stn_df, storm_df, grid)
 	storm = isstorm.set_index(pd.DatetimeIndex(isstorm["time"]).round("1min")).sort_index()
+	#Drop duplicates that are created by rounding time (this would only occur when scans are within 2 
+	# minutes, and only happens once in the whole Melbourne radar archive
+	storm = storm.drop(columns=["time"]).reset_index().drop_duplicates(subset=["time","stn_no"]).set_index("time")
     
         ###################
 	# FILL IN TRACKS  #
@@ -306,7 +312,7 @@ if __name__ == "__main__":
 	aws = aws.set_index(pd.DatetimeIndex(aws.dt_utc))
 	if stns == 0:
 		stns = np.unique(stn_df.stn_no.values)
-	aws_storms = pd.merge(storm[np.in1d(storm.stn_no,stns)].groupby("stn_no").resample("1min").asfreq().ffill(limit=MIN).drop(columns=["stn_no","time"]),
+	aws_storms = pd.merge(storm[np.in1d(storm.stn_no,stns)].groupby("stn_no").resample("1min").asfreq().ffill(limit=MIN).drop(columns=["stn_no"]),
 			aws[["stn_id","gust","q"]], how="inner", left_index=True, right_on=["stn_id","dt_utc"])
 	if save=="True":
 		aws_storms.to_csv("/g/data/eg3/ab4502/TINTobjects/"+file_id+"_aws.csv")

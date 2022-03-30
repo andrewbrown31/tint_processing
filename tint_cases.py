@@ -55,10 +55,10 @@ GS_ALT : meters
 def unpack_level1b(rid, times):
 	#Unzip level1b data between times[0] and times[1], and save to scratch
 	assert times[0].year == times[1].year, "Times range must be within calendar year"
-	files = np.array(glob.glob("/g/data/rq0/admin/level_1b_v2/"+rid+"/grid/"+str(times[0].year)+"/*.zip"))
+	files = np.array(glob.glob("/g/data/rq0/level_1b/"+rid+"/grid/"+str(times[0].year)+"/*.zip"))
 	if len(files) == 0:
 		print("NO FILES FOUND FOR RID: "+rid+" AND TIMES "+times[0].strftime("%Y%m%d %H:%M")+" "+times[-1].strftime("%Y%m%d %H:%M"))
-	file_dates = np.array([dt.datetime.strptime(f.split("/")[9].split("_")[1], "%Y%m%d") for f in files])
+	file_dates = np.array([dt.datetime.strptime(f.split("/")[8].split("_")[1], "%Y%m%d") for f in files])
 	target_files = files[(file_dates >= times[0].replace(hour=0, minute=0)) & (file_dates <= times[1].replace(hour=0, minute=0))]
 	extract_to = "/scratch/w40/ab4502/tint/"
 	for f in target_files:
@@ -104,9 +104,6 @@ def track_case(rid, times, smooth=True, step=1, azi_shear=True, extra_points=Fal
     #Initialise TINT tracks and set tracking parameters
     tracks_obj = Cell_tracks(refl_name)
     tracks_obj.params["FIELD_THRESH"]=30
-    tracks_obj.params["WATERSHED_THRESH"]=[30,40]
-    tracks_obj.params["WATERSHED_SMOOTHING"]=3
-    tracks_obj.params["WATERSHED_EROSION"]=0
     tracks_obj.params["MIN_SIZE"]=15
     tracks_obj.params["MIN_VOL"]=30
     tracks_obj.params["MIN_HGT"]=2
@@ -116,8 +113,13 @@ def track_case(rid, times, smooth=True, step=1, azi_shear=True, extra_points=Fal
     tracks_obj.params["FIELD_DEPTH"]=5
     tracks_obj.params["LOCAL_MAX_DIST"]=4
     tracks_obj.params["AZI_SHEAR"]=azi_shear
+    tracks_obj.params["STEINER"]=False
     tracks_obj.params["AZH1"]=2
     tracks_obj.params["AZH2"]=6
+    tracks_obj.params["SEGMENTATION_METHOD"]="watershed"
+    tracks_obj.params["WATERSHED_THRESH"]=[30,40]
+    tracks_obj.params["WATERSHED_SMOOTHING"]=3
+    tracks_obj.params["WATERSHED_EROSION"]=0
     
     #Perform TINT tracking
     tracks_obj.get_tracks(grids, "/g/data/eg3/ab4502/TINTobjects/"+outname+".h5", None)
@@ -177,11 +179,11 @@ if __name__ == "__main__":
     #From Stacey's paper
     #track_case("02", [dt.datetime(2011,2,4,9,0), dt.datetime(2011,2,4,9,30)], smooth=True, step=2)
     #Melb white christmas supercell
-    #track_case("02", [dt.datetime(2011,12,25,6), dt.datetime(2011,12,25,12)], smooth=True, step=2, extra_points=[(-37.2091, 145.8423), (-37.6654, 144.8322)], azi_shear=True, animation=False)
+    #track_case("2", [dt.datetime(2011,12,25,6,35), dt.datetime(2011,12,25,6,50)], smooth=True, step=2, extra_points=[(-37.2091, 145.8423), (-37.6654, 144.8322)], azi_shear=True, animation=False)
     #Melb 2016 Jan squall line
     #track_case("02", [dt.datetime(2016,1,13,3), dt.datetime(2016,1,13,9)], smooth=True, step=2, extra_points=[(-37.0222, 141.2657), (-37.1017, 147.6008), (-37.8640, 144.9639), (-38.0288, 144.4783)]) 
     #Melb Aug 2020 squall line
-    #track_case("02", [dt.datetime(2020,8,27,6), dt.datetime(2020,8,27,9)], smooth=True, step=2, extra_points=[(-38.5647, 146.7479), (-38.8051, 146.1936), (-38.1016, 147.1398), (-38.0288, 144.4783), (-38.2332, 143.7924)])         
+    track_case("2", [dt.datetime(2020,8,27,6), dt.datetime(2020,8,27,8,20)], smooth=True, step=2, extra_points=[(-38.5647, 146.7479), (-38.8051, 146.1936), (-38.1016, 147.1398), (-38.0288, 144.4783), (-38.2332, 143.7924)],animation=True)         
     #Yarrawonga bow echo
     #track_case("02", [dt.datetime(2011,9,28,6), dt.datetime(2011,9,28,12)], smooth=True, step=2, extra_points=[(-36.0690, 146.9509)])     
     #track_case("49", [dt.datetime(2011,9,28,6), dt.datetime(2011,9,28,12)], smooth=True, step=2, extra_points=[(-36.0690, 146.9509)])  
@@ -204,7 +206,7 @@ if __name__ == "__main__":
     #track_case("71", [dt.datetime(2016,1,14,3), dt.datetime(2016,1,14,9)], smooth=True, step=2, extra_points=[(-33.9465, 151.1731)])           
     #track_case("71", [dt.datetime(2014,10,14,11), dt.datetime(2014,10,14,12)], smooth=True, step=2, extra_points=[(-33.9465, 151.1731)], animation=True)           
     #track_case("71", [dt.datetime(2016,6,4,3), dt.datetime(2016,6,4,4)], smooth=True, step=2, extra_points=[(-33.9465, 151.1731)], animation=True)           
-    track_case("71", [dt.datetime(2014,6,28,6), dt.datetime(2014,6,28,7)], smooth=True, step=2, extra_points=[(-33.9465, 151.1731)], animation=True)           
+    #track_case("71", [dt.datetime(2014,6,28,6), dt.datetime(2014,6,28,7)], smooth=True, step=2, extra_points=[(-33.9465, 151.1731)], animation=True)           
     #Wagga
     #track_case("55", [dt.datetime(2009,1,20,4), dt.datetime(2009,1,20,7)], smooth=True, step=2, extra_points=[(-35.1583, 147.4575)],animation=True,azi_shear=False)           
     #track_case("55", [dt.datetime(2017,3,27,6,30), dt.datetime(2017,3,27,7,30)], smooth=True, step=2, extra_points=[(-35.1583, 147.4575)],animation=True,azi_shear=True)
@@ -240,7 +242,9 @@ if __name__ == "__main__":
     #track_case("27", [dt.datetime(2010,12,7,8), dt.datetime(2010,12,7,11)], smooth=True, step=1, azi_shear=False, extra_points=[(-31.1558, 136.8054)], animation=True)
 
     #Null cases
-    #track_case("50", [dt.datetime(2006,1,1,0), dt.datetime(2006,1,1,3,0)], smooth=False, step=1, extra_points=[(-27.4034, 151.7413)], azi_shear=False, animation=False)        
+    #track_case("2", [dt.datetime(2020,1,3,0), dt.datetime(2020,1,4,0,0)], smooth=False, step=1, extra_points=[(-27.4034, 151.7413)], azi_shear=False, animation=True)        
+    #track_case("66", [dt.datetime(2013,5,10,22), dt.datetime(2013,5,11,0,0)], smooth=False, step=1, extra_points=[(-27.4034, 151.7413)], azi_shear=False, animation=True)        
+    #track_case("50", [dt.datetime(2006,1,1,0), dt.datetime(2006,1,1,12,0)], smooth=False, step=1, extra_points=[(-27.4034, 151.7413)], azi_shear=False, animation=True)        
     #track_case("2", [dt.datetime(2020,1,4,11,30), dt.datetime(2020,1,4,12,30)], smooth=False, step=1, extra_points=[(-37.5976, 149.7289), (-37.6654, 144.8322), (-37.9483, 144.9269), (-37.9075, 144.1303), (-37.5127, 143.7911), (-37.7067, 142.9378), (-38.2332, 143.7924)], azi_shear=True, animation=True)
 
     #Auto cases
