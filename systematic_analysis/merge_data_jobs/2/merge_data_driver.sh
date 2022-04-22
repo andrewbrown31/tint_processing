@@ -1,0 +1,11 @@
+#!/bin/bash
+
+for y in $(seq 2007 1 2007); do
+
+   cp /home/548/ab4502/working/observations/tint_processing/systematic_analysis/merge_data_jobs/2/merge_data_generic.sh /home/548/ab4502/working/observations/tint_processing/systematic_analysis/merge_data_jobs/2/merge_data_$y.sh
+   sed -i "s/YYYY/$y/g" /home/548/ab4502/working/observations/tint_processing/systematic_analysis/merge_data_jobs/2/merge_data_$y.sh
+
+   qsub /home/548/ab4502/working/observations/tint_processing/systematic_analysis/merge_data_jobs/2/merge_data_$y.sh
+   rm /home/548/ab4502/working/observations/tint_processing/systematic_analysis/merge_data_jobs/2/merge_data_$y.sh
+
+done
