@@ -5,7 +5,7 @@ This repository contains the following code and directories to analyse TINT outp
 	tint_example.ipynb			(notebook used to debug modified TINT)
 	object_tracking_output_view.ipynb	(viewer for TINT output)
 	tint_cases.py				(manually run TINT for indivudual cases)
-	systematic_analysis/			(scripts and notbooks for long-term systematic analysis)
+	systematic_analysis/			(scripts and notbooks for long-term systematic analysis. EDIT: not currently included in repo)
 	jobs_*/					(PBS jobs for running TINT over long-term data)
 
 Reanalysis data, and some station and lightning data, has been processed using code from the following repository: https://github.com/andrewbrown31/SCW-analysis
