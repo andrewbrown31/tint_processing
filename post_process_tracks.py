@@ -17,7 +17,7 @@ def return_drop_list(state):
 
 	#Contains lists of stations to drop from each state. Generally either too high above sea level, or offshore.    
     
-	assert state in ["qld","nsw","vic","sa","wa"]
+	assert state in ["qld","nsw","vic","sa","wa","vic_nsw"]
 
 	if state=="qld":
 		return [41175, 200840, 200601, 200736, 200783, 200701, 200831, 200732, 200704, 200001,\
@@ -30,6 +30,8 @@ def return_drop_list(state):
 		return [9091,9193,9255,9256]
 	elif state=="sa":
 		return []
+	elif state=="vic_nsw":
+		return [83084, 86376, 79103, 82139, 86381, 85291, 83024, 83085, 79101, 86344, 56238, 72161, 56243, 63292, 70349, 62100, 71075, 71032, 200288, 200839, 66196]
 
 def plot_gust_storm_ts(aws_storms):
         
@@ -208,6 +210,35 @@ def latlon_dist(lat, lon, lats, lons):
 
         return (R * c)
 
+def read_stn_info(state):
+
+	names = ["id", "stn_no", "district", "stn_name", "site_open", "site_close", "lat", "lon", "latlon_method", "state",\
+			"hgt_asl", "hgt_asl_baro", "wmo_idx", "y1", "y2", "comp%", "Y%", "N%", "W%", "S%", "I%", "#"]
+	if state=="vic_nsw":
+		stn_df1 = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/vic_one_min_gust/HD01D_StnDet_*.txt")[0],\
+		    names=names, header=0)
+		stn_df2 = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/nsw_one_min_gust/HD01D_StnDet_*.txt")[0],\
+		    names=names, header=0)
+		stn_df = pd.concat([stn_df1, stn_df2], axis=0)
+	else:
+		stn_df = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/"+state+"_one_min_gust/HD01D_StnDet_*.txt")[0],\
+		    names=names, header=0)
+	stn_df["y1"] = pd.to_numeric(stn_df.y1, errors="coerce")
+	stn_df["y2"] = pd.to_numeric(stn_df.y2, errors="coerce")
+	
+	return stn_df
+
+def load_aws(state):
+
+	if state == "vic_nsw":
+		aws1 = pd.read_csv("/g/data/eg3/ab4502/ExtremeWind/obs/aws/"+"vic"+"_one_min_gust/"+year+".csv")
+		aws2 = pd.read_csv("/g/data/eg3/ab4502/ExtremeWind/obs/aws/"+"nsw"+"_one_min_gust/"+year+".csv")
+		aws = pd.concat([aws1, aws2], axis=0)
+	else:
+		aws = pd.read_csv("/g/data/eg3/ab4502/ExtremeWind/obs/aws/"+state+"_one_min_gust/"+year+".csv")
+	aws = aws.set_index(pd.DatetimeIndex(aws.dt_utc))
+	return aws
+
 if __name__ == "__main__":
 
 	##########
@@ -240,12 +271,7 @@ if __name__ == "__main__":
 	# STATION INFO #
 	################
 	#Load station info
-	names = ["id", "stn_no", "district", "stn_name", "site_open", "site_close", "lat", "lon", "latlon_method", "state",\
-			"hgt_asl", "hgt_asl_baro", "wmo_idx", "y1", "y2", "comp%", "Y%", "N%", "W%", "S%", "I%", "#"]
-	stn_df = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/"+state+"_one_min_gust/HD01D_StnDet_*.txt")[0],\
-                names=names, header=0)
-	stn_df["y1"] = pd.to_numeric(stn_df.y1, errors="coerce")
-	stn_df["y2"] = pd.to_numeric(stn_df.y2, errors="coerce")
+	stn_df = read_stn_info(state)
 
 	################
 	# STORM TRACKS #
@@ -308,8 +334,7 @@ if __name__ == "__main__":
 	#Merge the one-minute AWS data with storm data, up-sampled to one-minute frequency by forward filling over MIN intervals.
 	#Done separately for each station
 	print("Merging AWS and TINT data...")
-	aws = pd.read_csv("/g/data/eg3/ab4502/ExtremeWind/obs/aws/"+state+"_one_min_gust/"+year+".csv")
-	aws = aws.set_index(pd.DatetimeIndex(aws.dt_utc))
+	aws = load_aws(state)
 	if stns == 0:
 		stns = np.unique(stn_df.stn_no.values)
 	aws_storms = pd.merge(storm[np.in1d(storm.stn_no,stns)].groupby("stn_no").resample("1min").asfreq().ffill(limit=MIN).drop(columns=["stn_no"]),
