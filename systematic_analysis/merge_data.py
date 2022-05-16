@@ -47,8 +47,16 @@ def load_stn_info(state):
         #Load station info
 	names = ["id", "stn_no", "district", "stn_name", "site_open", "site_close", "lat", "lon", "latlon_method", "state",\
 			"hgt_asl", "hgt_asl_baro", "wmo_idx", "y1", "y2", "comp%", "Y%", "N%", "W%", "S%", "I%", "#"]
-	stn_info = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/"+state+"_one_min_gust/HD01D_StnDet_*.txt")[0],\
-		names=names, header=0)
+
+	if state == "vic_nsw":
+		stn_info1 = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/vic_one_min_gust/HD01D_StnDet_*.txt")[0],\
+			names=names, header=0)
+		stn_info2 = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/nsw_one_min_gust/HD01D_StnDet_*.txt")[0],\
+			names=names, header=0)
+		stn_info = pd.concat([stn_info1, stn_info2], axis=0)
+	else:
+		stn_info = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/"+state+"_one_min_gust/HD01D_StnDet_*.txt")[0],\
+			names=names, header=0)
 	return stn_info
 
 def load_era5(fid):
@@ -105,7 +113,7 @@ def load_lightning(fid):
 
 	f = xr.open_dataset("/g/data/eg3/ab4502/ExtremeWind/ad_data/lightning/lightning_Australasia0.250000degree_6.00000hr_"+yyyymmdd1[0:4]+".nc",\
 	    decode_times=False)
-        f = f.assign_coords(time=[dt.datetime(int(yyyymmdd1[0:4]),1,1,0) + dt.timedelta(hours=int(i*6)) for i in np.arange(len(f.time.values))]).\
+	f = f.assign_coords(time=[dt.datetime(int(yyyymmdd1[0:4]),1,1,0) + dt.timedelta(hours=int(i*6)) for i in np.arange(len(f.time.values))]).\
                 sel({"time":slice(start_t,end_t)})
 	f = f.assign_coords(lat=np.arange(f.lat.min(), f.lat.max() + 0.25, 0.25))
 	f = f.assign_coords(lon=np.arange(f.lon.min(), f.lon.max() + 0.25, 0.25))
@@ -121,7 +129,7 @@ def extract_lightning_points(lightning, stn_lat, stn_lon, stn_list):
 	for i in np.arange(len(stn_lat)):
 		dist_km = latlon_dist(stn_lat[i], stn_lon[i], y, x)
 		sliced = xr.where(dist_km<=50, lightning, np.nan)
-		temp = sliced.max(("lat","lon")).Lightning_observed.to_dataframe()
+		temp = sliced.sum(("lat","lon")).Lightning_observed.to_dataframe()
 		temp["points"] = i
 		df_out = pd.concat([df_out,temp], axis=0)
 
