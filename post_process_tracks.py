@@ -21,7 +21,7 @@ def return_drop_list(state):
 
 	if state=="qld":
 		return [41175, 200840, 200601, 200736, 200783, 200701, 200831, 200732, 200704, 200001,\
-				200283, 39122, 39059, 27058, 27054]
+				200283, 39122, 39059, 27058, 27054, 40927, 40926, 40925, 40043]
 	elif state=="vic":
 		return [83084, 86376, 79103, 82139, 86381, 85291, 83024, 83085, 79101, 86344]
 	elif state=="nsw":
@@ -228,7 +228,7 @@ def read_stn_info(state):
 	
 	return stn_df
 
-def load_aws(state):
+def load_aws(state, year):
 
 	if state == "vic_nsw":
 		aws1 = pd.read_csv("/g/data/eg3/ab4502/ExtremeWind/obs/aws/"+"vic"+"_one_min_gust/"+year+".csv")
@@ -334,7 +334,8 @@ if __name__ == "__main__":
 	#Merge the one-minute AWS data with storm data, up-sampled to one-minute frequency by forward filling over MIN intervals.
 	#Done separately for each station
 	print("Merging AWS and TINT data...")
-	aws = load_aws(state)
+	aws = load_aws(state, year)
+	aws = aws[aws["q"]=="Y"]
 	if stns == 0:
 		stns = np.unique(stn_df.stn_no.values)
 	aws_storms = pd.merge(storm[np.in1d(storm.stn_no,stns)].groupby("stn_no").resample("1min").asfreq().ffill(limit=MIN).drop(columns=["stn_no"]),
