@@ -39,7 +39,8 @@ def load_scws(rid,year,month):
     #keep_inds = []
     drop="domain"
     i=0
-    while i < scws_envs.shape[0]:
+    shape = scws_envs.shape[0]
+    while i < shape:
          #if scws_envs.iloc[i].hour_group == 0:
             #diffs = abs(scws_envs.iloc[i].dt_utc - scws_envs.dt_utc)
             #if drop=="stns":
@@ -74,7 +75,7 @@ def load_scws(rid,year,month):
     # does not record a SCW event in the following hour. Note that if a radar object is observed at the station neighbouring the ERA5 grid point in the following hour,
     # then "in10km" is equal to 1.
     temp_df["scw"] = np.where((temp_df.gust>=25) & (temp_df.wgr_4>=1.5) & (temp_df.in10km==1),1,0)
-    non_scw_envs = temp_df.sort_values(["scw","in10km"],ascending=False).\
+    non_scw_envs = temp_df.sort_values(["scw","in10km","gust"],ascending=False).\
 	drop_duplicates(subset=["hour_floor","era5_lat","era5_lon"]).query("scw==0").sort_values("dt_utc")
     
     #Get the UIDs for all SCW occurrences (SCW storms). Get all other UIDs (non SCW storms) which go within 10 km of an AWS.
@@ -118,8 +119,10 @@ def load_scws_driver(rid,start_year,end_year):
 
 if __name__ == "__main__":
 
-    #load_scws_driver("2",2008,2020)
+    load_scws_driver("2",2008,2020)
+    #load_scws_driver("49",2006,2020)
     load_scws_driver("66",2006,2020)
-    #load_scws_driver("69",2010,2020)
-    #load_scws_driver("70",2013,2020)
-    #load_scws_driver("71",2009,2020)
+    load_scws_driver("69",2010,2020)
+    load_scws_driver("70",2013,2020)
+    load_scws_driver("71",2009,2020)
+    #load_scws_driver("75",2012,2020)
