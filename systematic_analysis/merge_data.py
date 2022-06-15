@@ -111,13 +111,10 @@ def load_lightning(fid):
 	start_t = dt.datetime(int(yyyymmdd1[0:4]), int(yyyymmdd1[4:6]), int(yyyymmdd1[6:8]))
 	end_t = dt.datetime(int(yyyymmdd2[0:4]), int(yyyymmdd2[4:6]), int(yyyymmdd2[6:8])) + dt.timedelta(days=1)
 
-	f = xr.open_dataset("/g/data/eg3/ab4502/ExtremeWind/ad_data/lightning/lightning_Australasia0.250000degree_6.00000hr_"+yyyymmdd1[0:4]+".nc",\
+	f = xr.open_dataset("/g/data/eg3/ab4502/ExtremeWind/ad_data/lightning_1hr/lightning_AUS_0.25deg_1hr_"+yyyymmdd1[0:4]+".nc",\
 	    decode_times=False)
-	f = f.assign_coords(time=[dt.datetime(int(yyyymmdd1[0:4]),1,1,0) + dt.timedelta(hours=int(i*6)) for i in np.arange(len(f.time.values))]).\
+	f = f.assign_coords(time=[dt.datetime(int(yyyymmdd1[0:4]),1,1,0) + dt.timedelta(hours=int(i)) for i in np.arange(len(f.time.values))]).\
                 sel({"time":slice(start_t,end_t)})
-	f = f.assign_coords(lat=np.arange(f.lat.min(), f.lat.max() + 0.25, 0.25))
-	f = f.assign_coords(lon=np.arange(f.lon.min(), f.lon.max() + 0.25, 0.25))
-	f = f.resample({"time":"1H"}).nearest()
 	return f
 
 def extract_lightning_points(lightning, stn_lat, stn_lon, stn_list):
@@ -209,7 +206,7 @@ def load_tint_aws_era5_lightning(fid, state, summary="max"):
 
 if __name__ == "__main__":
 
-	GadiClient()
+	client=GadiClient()
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-year', type=str)
@@ -230,3 +227,5 @@ if __name__ == "__main__":
 	fid2 = date2.strftime("%Y%m%d")
 	print(date)
 	load_tint_aws_era5_lightning(rid+"_"+fid1+"_"+fid2, state, summary=summary)
+
+	client.close()

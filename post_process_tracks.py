@@ -339,7 +339,7 @@ if __name__ == "__main__":
 	if stns == 0:
 		stns = np.unique(stn_df.stn_no.values)
 	aws_storms = pd.merge(storm[np.in1d(storm.stn_no,stns)].groupby("stn_no").resample("1min").asfreq().ffill(limit=MIN).drop(columns=["stn_no"]),
-			aws[["stn_id","gust","q"]], how="inner", left_index=True, right_on=["stn_id","dt_utc"])
+			aws[["stn_id","dt_lt","gust","q"]], how="inner", left_index=True, right_on=["stn_id","dt_utc"])
 	if save=="True":
 		aws_storms.to_csv("/g/data/eg3/ab4502/TINTobjects/"+file_id+"_aws.csv")
 

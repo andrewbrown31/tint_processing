@@ -14,7 +14,7 @@ def calc_bdsd(ds):
 
 def load_era5(y,test=False):
 
-    #Load ERA5 diagnostics and resample to 6-hourly
+    #Load ERA5 diagnostics
 
     v = ["qmean01","lr13","Umean06","s06","bdsd"]
     if test:
@@ -76,14 +76,24 @@ def summarise_and_save(era5_cluster,y):
 
    dim=("time","lat","lon")
 
-   out_ds = xr.Dataset({"cluster1":(dim, (era5_cluster.cluster==0).resample({"time":"1M"}).mean("time")),
-              "cluster2":(dim, (era5_cluster.cluster==1).resample({"time":"1M"}).mean("time")),
-              "cluster3":(dim, (era5_cluster.cluster==2).resample({"time":"1M"}).mean("time")),
-              "cluster1_bdsd":(dim, ((era5_cluster.cluster==0) & (era5_cluster.bdsd>0.83)).resample({"time":"1M"}).mean("time")),
-              "cluster2_bdsd":(dim, ((era5_cluster.cluster==1) & (era5_cluster.bdsd>0.83)).resample({"time":"1M"}).mean("time")),
-              "cluster3_bdsd":(dim, ((era5_cluster.cluster==2) & (era5_cluster.bdsd>0.83)).resample({"time":"1M"}).mean("time"))
-              },
-              coords={"lat":(("lat"), era5_cluster.lat.values), "lon":(("lon"), era5_cluster.lon.values)})
+   #out_ds = xr.Dataset({"cluster1":(dim, (era5_cluster.cluster==0).resample({"time":"1M"}).mean("time")),
+              #"cluster2":(dim, (era5_cluster.cluster==1).resample({"time":"1M"}).mean("time")),
+              #"cluster3":(dim, (era5_cluster.cluster==2).resample({"time":"1M"}).mean("time")),
+              #"cluster1_bdsd":(dim, ((era5_cluster.cluster==0) & (era5_cluster.bdsd>0.83)).resample({"time":"1M"}).mean("time")),
+              #"cluster2_bdsd":(dim, ((era5_cluster.cluster==1) & (era5_cluster.bdsd>0.83)).resample({"time":"1M"}).mean("time")),
+              #"cluster3_bdsd":(dim, ((era5_cluster.cluster==2) & (era5_cluster.bdsd>0.83)).resample({"time":"1M"}).mean("time"))
+              #},
+              #coords={"lat":(("lat"), era5_cluster.lat.values), "lon":(("lon"), era5_cluster.lon.values)})
+
+   out_ds = xr.Dataset({"cluster1":(dim, (era5_cluster.cluster==0).resample({"time":"1D"}).max(("time")).resample({"time":"1M"}).sum("time")),
+	    "cluster2":(dim, (era5_cluster.cluster==1).resample({"time":"1D"}).max(("time")).resample({"time":"1M"}).sum("time")),
+	    "cluster3":(dim, (era5_cluster.cluster==2).resample({"time":"1D"}).max(("time")).resample({"time":"1M"}).sum("time")),
+	    "clusterall_bdsd":(dim, (era5_cluster.bdsd>0.83).resample({"time":"1D"}).max(("time")).resample({"time":"1M"}).sum("time")),
+	    "cluster1_bdsd":(dim, ((era5_cluster.cluster==0) & (era5_cluster.bdsd>0.83)).resample({"time":"1D"}).max(("time")).resample({"time":"1M"}).sum("time")),
+	    "cluster2_bdsd":(dim, ((era5_cluster.cluster==1) & (era5_cluster.bdsd>0.83)).resample({"time":"1D"}).max(("time")).resample({"time":"1M"}).sum("time")),
+	    "cluster3_bdsd":(dim, ((era5_cluster.cluster==2) & (era5_cluster.bdsd>0.83)).resample({"time":"1D"}).max(("time")).resample({"time":"1M"}).sum("time"))
+	    },
+	    coords={"lat":(("lat"), era5_cluster.lat.values), "lon":(("lon"), era5_cluster.lon.values), "time":(era5_cluster.cluster==0).resample({"time":"1M"}).mean("time").time})
 
    out_ds.to_netcdf("/g/data/eg3/ab4502/ExtremeWind/aus/era5/clusters_"+y+".nc")
 

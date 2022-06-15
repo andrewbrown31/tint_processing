@@ -2,16 +2,16 @@
 
 #PBS -P eg3 
 #PBS -q normal
-#PBS -l walltime=02:00:00,mem=64GB 
+#PBS -l walltime=06:00:00,mem=32GB 
 #PBS -l ncpus=8
-#PBS -o /home/548/ab4502/working/ExtremeWind/jobs/messages/merge_data_66_YYYY.o
-#PBS -e /home/548/ab4502/working/ExtremeWind/jobs/messages/merge_data_66_YYYY.e
+#PBS -o /home/548/ab4502/working/ExtremeWind/jobs/messages/merge_data_75_YYYY.o
+#PBS -e /home/548/ab4502/working/ExtremeWind/jobs/messages/merge_data_75_YYYY.e
 #PBS -l storage=gdata/eg3+gdata/rq0+scratch/w40+gdata/rt52
 
 source activate wrfpython3.6
 
 STATE="qld"
-RID="66"
+RID="75"
 SUMMARY="max"
 
 for m in {1..12}; do

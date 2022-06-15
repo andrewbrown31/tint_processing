@@ -106,7 +106,7 @@ def track_case(rid, times, smooth=True, step=1, azi_shear=True, extra_points=Fal
     tracks_obj.params["FIELD_THRESH"]=30
     tracks_obj.params["MIN_SIZE"]=15
     tracks_obj.params["MIN_VOL"]=30
-    tracks_obj.params["MIN_HGT"]=2
+    tracks_obj.params["MIN_HGT"]=0
     tracks_obj.params["MAX_DISPARITY"]=60
     tracks_obj.params["SEARCH_MARGIN"]=10000
     tracks_obj.params["SKIMAGE_PROPS"]=["eccentricity","major_axis_length","minor_axis_length","bbox"]
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     #TOBAC TESTING
     #track_case("66", [dt.datetime(2013,11,23,9,0), dt.datetime(2013,11,23,10,0)], smooth=True, step=1, extra_points=[(-27.6297, 152.7111)], azi_shear=True, animation=False) 
     #track_case("2", [dt.datetime(2010,3,6,2,30), dt.datetime(2010,3,6,3,30)], smooth=True, step=2, extra_points=[(-37.2091, 145.8423), (-37.6654, 144.8322)], azi_shear=True, animation=False)
-    #track_case("2", [dt.datetime(2020,1,31,3), dt.datetime(2020,1,31,4,0)], smooth=False, step=1, extra_points=[(-37.5976, 149.7289), (-37.6654, 144.8322), (-37.9483, 144.9269), (-37.9075, 144.1303), (-37.5127, 143.7911), (-37.7067, 142.9378), (-38.2332, 143.7924)], azi_shear=True, animation=False)
+    #track_case("2", [dt.datetime(2020,1,31,3), dt.datetime(2020,1,31,12,0)], smooth=False, step=1, extra_points=[(-37.5976, 149.7289), (-37.6654, 144.8322), (-37.9483, 144.9269), (-37.9075, 144.1303), (-37.5127, 143.7911), (-37.7067, 142.9378), (-38.2332, 143.7924)], azi_shear=True, animation=True)
     #track_case("2", [dt.datetime(2012,2,26,8,30), dt.datetime(2012,2,26,9,30)], smooth=True, step=2, extra_points=[(-37.2091, 145.8423), (-37.6654, 144.8322)], azi_shear=True, animation=False)
     #track_case("2", [dt.datetime(2015,2,28,9), dt.datetime(2015,2,28,10)], smooth=True, step=2, extra_points=[(-38.1480, 145.1152), (-37.8565, 144.7565), (-37.6654, 144.8322)], animation=False, azi_shear=True)
     #track_case("27", [dt.datetime(2007,10,27,8,30), dt.datetime(2007,10,27,9,30)], smooth=True, step=1, azi_shear=False, extra_points=[(-31.1558, 136.8054)], animation=False)
@@ -183,7 +183,7 @@ if __name__ == "__main__":
     #Melb 2016 Jan squall line
     #track_case("02", [dt.datetime(2016,1,13,3), dt.datetime(2016,1,13,9)], smooth=True, step=2, extra_points=[(-37.0222, 141.2657), (-37.1017, 147.6008), (-37.8640, 144.9639), (-38.0288, 144.4783)]) 
     #Melb Aug 2020 squall line
-    track_case("2", [dt.datetime(2020,8,27,6), dt.datetime(2020,8,27,8,20)], smooth=True, step=2, extra_points=[(-38.5647, 146.7479), (-38.8051, 146.1936), (-38.1016, 147.1398), (-38.0288, 144.4783), (-38.2332, 143.7924)],animation=True)         
+    #track_case("2", [dt.datetime(2020,8,27,6), dt.datetime(2020,8,27,8,20)], smooth=True, step=2, extra_points=[(-38.5647, 146.7479), (-38.8051, 146.1936), (-38.1016, 147.1398), (-38.0288, 144.4783), (-38.2332, 143.7924)],animation=True)         
     #Yarrawonga bow echo
     #track_case("02", [dt.datetime(2011,9,28,6), dt.datetime(2011,9,28,12)], smooth=True, step=2, extra_points=[(-36.0690, 146.9509)])     
     #track_case("49", [dt.datetime(2011,9,28,6), dt.datetime(2011,9,28,12)], smooth=True, step=2, extra_points=[(-36.0690, 146.9509)])  
@@ -195,6 +195,8 @@ if __name__ == "__main__":
 	    #azi_shear=False, animation=True)
     #MELB 2021
     #track_case("2", [dt.datetime(2012,2,26,8,30), dt.datetime(2012,2,26,9,30)], smooth=True, step=2, extra_points=[(-37.6654, 144.8322)], azi_shear=True, animation=True)
+    track_case("2", [dt.datetime(2009,4,26,0,0), dt.datetime(2009,4,26,3,0)], smooth=True, step=1, extra_points=[(-37.6654, 144.8322)], azi_shear=True, animation=True)
+    
 
     #NSW
     #Kurnell

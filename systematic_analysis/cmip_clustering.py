@@ -37,6 +37,7 @@ def replace_nulls(cluster, s06_transform, qmean01_transform, lr13_transform, Ume
 def output_and_save(cluster, model, experiment, y1, y2):
 
 	dim=("time","lat","lon")
+	#dim=("lat","lon","time")
 
 	#out_ds = xr.Dataset({"cluster1":(dim, (cluster.cluster==0).resample({"time":"1M"}).mean("time")),
 		  #"cluster2":(dim, (cluster.cluster==1).resample({"time":"1M"}).mean("time")),
