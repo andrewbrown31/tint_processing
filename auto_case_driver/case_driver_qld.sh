@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #PBS -P eg3 
-#PBS -q normal
-#PBS -l walltime=06:00:00,mem=64GB 
+#PBS -q express
+#PBS -l walltime=01:00:00,mem=64GB 
 #PBS -l ncpus=1
 #PBS -o /home/548/ab4502/working/ExtremeWind/jobs/messages/case_driver_qld.o 
 #PBS -e /home/548/ab4502/working/ExtremeWind/jobs/messages/case_driver_qld.e

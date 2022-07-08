@@ -103,10 +103,10 @@ def track_case(rid, times, smooth=True, step=1, azi_shear=True, extra_points=Fal
 
     #Initialise TINT tracks and set tracking parameters
     tracks_obj = Cell_tracks(refl_name)
-    tracks_obj.params["FIELD_THRESH"]=30
+    tracks_obj.params["FIELD_THRESH"]=20
     tracks_obj.params["MIN_SIZE"]=15
     tracks_obj.params["MIN_VOL"]=30
-    tracks_obj.params["MIN_HGT"]=0
+    tracks_obj.params["MIN_HGT"]=2
     tracks_obj.params["MAX_DISPARITY"]=60
     tracks_obj.params["SEARCH_MARGIN"]=10000
     tracks_obj.params["SKIMAGE_PROPS"]=["eccentricity","major_axis_length","minor_axis_length","bbox"]
@@ -117,9 +117,10 @@ def track_case(rid, times, smooth=True, step=1, azi_shear=True, extra_points=Fal
     tracks_obj.params["AZH1"]=2
     tracks_obj.params["AZH2"]=6
     tracks_obj.params["SEGMENTATION_METHOD"]="watershed"
-    tracks_obj.params["WATERSHED_THRESH"]=[30,40]
+    tracks_obj.params["WATERSHED_THRESH"]=[20,50]
     tracks_obj.params["WATERSHED_SMOOTHING"]=3
     tracks_obj.params["WATERSHED_EROSION"]=0
+    tracks_obj.params["MIN_FIELD"]=30
     
     #Perform TINT tracking
     tracks_obj.get_tracks(grids, "/g/data/eg3/ab4502/TINTobjects/"+outname+".h5", None)
@@ -195,7 +196,7 @@ if __name__ == "__main__":
 	    #azi_shear=False, animation=True)
     #MELB 2021
     #track_case("2", [dt.datetime(2012,2,26,8,30), dt.datetime(2012,2,26,9,30)], smooth=True, step=2, extra_points=[(-37.6654, 144.8322)], azi_shear=True, animation=True)
-    track_case("2", [dt.datetime(2009,4,26,0,0), dt.datetime(2009,4,26,3,0)], smooth=True, step=1, extra_points=[(-37.6654, 144.8322)], azi_shear=True, animation=True)
+    #track_case("2", [dt.datetime(2009,4,26,0,0), dt.datetime(2009,4,26,3,0)], smooth=True, step=1, extra_points=[(-37.6654, 144.8322)], azi_shear=True, animation=True)
     
 
     #NSW
@@ -250,37 +251,14 @@ if __name__ == "__main__":
     #track_case("2", [dt.datetime(2020,1,4,11,30), dt.datetime(2020,1,4,12,30)], smooth=False, step=1, extra_points=[(-37.5976, 149.7289), (-37.6654, 144.8322), (-37.9483, 144.9269), (-37.9075, 144.1303), (-37.5127, 143.7911), (-37.7067, 142.9378), (-38.2332, 143.7924)], azi_shear=True, animation=True)
 
     #Auto cases
-    #events = pd.read_pickle("/g/data/eg3/ab4502/ExtremeWind/obs/aws/convective_wind_gust_aus_2005_2018.pkl")
-    #for t in events[(events["wind_gust"] >= 25) & (events["stn_name"]=="Melbourne") & (events["tc_affected"]==0) & (events["lightning"]>=2)].sort_values("wind_gust",ascending=False).iloc[0:9].gust_time_utc.values:
-        #print("\nMELBOURNE; "+str(t))
-        #t = pd.to_datetime(t)
-        #try:
-        #   track_case("2", [t-dt.timedelta(hours=0.5), t+dt.timedelta(hours=0.5)], smooth=False, step=1, extra_points=[np.unique(events[events.stn_name=="Melbourne"][["lat","lon"]]).squeeze()], azi_shear=True, animation=True) 
-        #except:
-        #   track_case("2", [t-dt.timedelta(hours=0.5), t+dt.timedelta(hours=0.5)], smooth=False, step=1, extra_points=[np.unique(events[events.stn_name=="Melbourne"][["lat","lon"]]).squeeze()], azi_shear=False, animation=True) 
-         #  print("\nINFO: NO AZI SHEAR")
-    #for t in events[(events["wind_gust"] >= 25) & (events["stn_name"]=="Sydney") & (events["tc_affected"]==0) & (events["lightning"]>=2) & (events["gust_time_utc"]>=dt.datetime(2009,5,17)) & (events["gust_time_utc"] != dt.datetime(2013,10,29,3,8,0)) & (events["gust_time_utc"] != dt.datetime(2014,6,28,6,8,0))].sort_values("wind_gust",ascending=False).iloc[0:9].gust_time_utc.values:
-    #    print("\nSYDNEY; "+str(t))
-    #    t = pd.to_datetime(t)
-    #    try:
-    #       track_case("71", [t-dt.timedelta(hours=0.5), t+dt.timedelta(hours=0.5)], smooth=False, step=1, extra_points=[np.unique(events[events.stn_name=="Sydney"][["lat","lon"]]).squeeze()], azi_shear=True, animation=True) 
-    #    except:
-    #       track_case("71", [t-dt.timedelta(hours=0.5), t+dt.timedelta(hours=0.5)], smooth=False, step=1, extra_points=[np.unique(events[events.stn_name=="Sydney"][["lat","lon"]]).squeeze()], azi_shear=False, animation=True) 
-    #       print("\nINFO: NO AZI SHEAR")
-    #for t in events[(events["wind_gust"] >= 25) & (events["stn_name"]=="Amberley") & (events["tc_affected"]==0) & (events["lightning"]>=2)].sort_values("wind_gust",ascending=False).iloc[0:4].gust_time_utc.values:
-    #    print("\nAMBERLEY; "+str(t))
-    #    t = pd.to_datetime(t)
-    #    try:
-    #       track_case("66", [t-dt.timedelta(hours=0.5), t+dt.timedelta(hours=0.5)], smooth=False, step=1, extra_points=[np.unique(events[events.stn_name=="Amberley"][["lat","lon"]]).squeeze()], azi_shear=True, animation=True) 
-    #    except:
-    #       track_case("66", [t-dt.timedelta(hours=0.5), t+dt.timedelta(hours=0.5)], smooth=False, step=1, extra_points=[np.unique(events[events.stn_name=="Amberley"][["lat","lon"]]).squeeze()], azi_shear=True, animation=True) 
-    #       print("\nINFO: NO AZI SHEAR")
-    #for t in events[(events["wind_gust"] >= 25) & (events["stn_name"]=="Oakey") & (events["tc_affected"]==0) & (events["lightning"]>=2)].sort_values("wind_gust",ascending=False).iloc[0:5].gust_time_utc.values:
-    #    print("\nOAKEY; "+str(t))
-    #    t = pd.to_datetime(t)
-    #    track_case("50", [t-dt.timedelta(hours=0.5), t+dt.timedelta(hours=0.5)], smooth=False, step=1, extra_points=[np.unique(events[events.stn_name=="Oakey"][["lat","lon"]]).squeeze()], azi_shear=False, animation=True) 
-	    
-    #for t in events[(events["wind_gust"] >= 25) & (events["stn_name"]=="Woomera") & (events["tc_affected"]==0) & (events["lightning"]>=2)].sort_values("wind_gust",ascending=False).iloc[0:9].gust_time_utc.values:
-        #print("\nWOOMERA; "+str(t))
-        #t = pd.to_datetime(t)
-        #track_case("27", [t-dt.timedelta(hours=0.5), t+dt.timedelta(hours=0.5)], smooth=False, step=1, extra_points=[np.unique(events[events.stn_name=="Woomera"][["lat","lon"]]).squeeze()], animation=True, azi_shear=False) 
+    #df=pd.read_csv("/g/data/eg3/ab4502/figs/ExtremeWind/case_studies/case_study_list.csv")
+    #for index, row in df[df.stn_name=="Melbourne"].iterrows():
+        #track_case("2",
+		#[pd.to_datetime(row.gust_time_utc)+dt.timedelta(hours=-0.5), pd.to_datetime(row.gust_time_utc)+dt.timedelta(hours=0.5)],
+		#smooth=False, step=1, azi_shear=True, animation=False)
+
+    df=pd.read_csv("/g/data/eg3/ab4502/figs/ExtremeWind/case_studies/case_study_list.csv")
+    for index, row in df[df.stn_name=="Sydney"].iloc[0:1].iterrows():
+        track_case("71",
+		[pd.to_datetime(row.gust_time_utc)+dt.timedelta(hours=-0.5), pd.to_datetime(row.gust_time_utc)+dt.timedelta(hours=0.5)],
+		smooth=False, step=1, azi_shear=True, animation=False)

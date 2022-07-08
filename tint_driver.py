@@ -127,16 +127,16 @@ def track(rid, times, azi_shear, steiner, refl_name="corrected_reflectivity"):
         tracks_obj.params["MAX_DISPARITY"]=60
         tracks_obj.params["SEARCH_MARGIN"]=10000
         tracks_obj.params["SKIMAGE_PROPS"]=["eccentricity","major_axis_length","minor_axis_length","bbox"]
-        tracks_obj.params["FIELD_DEPTH"]=5
         tracks_obj.params["LOCAL_MAX_DIST"]=4
         tracks_obj.params["AZI_SHEAR"]=azi_shear
         tracks_obj.params["STEINER"]=steiner
         tracks_obj.params["AZH1"]=2
         tracks_obj.params["AZH2"]=6
         tracks_obj.params["SEGMENTATION_METHOD"]="watershed"
-        tracks_obj.params["WATERSHED_THRESH"]=[30,40]
+        tracks_obj.params["WATERSHED_THRESH"]=[30]
         tracks_obj.params["WATERSHED_SMOOTHING"]=3
         tracks_obj.params["WATERSHED_EROSION"]=0
+        tracks_obj.params["MIN_FIELD"]=30
         
         #Perform TINT tracking
         tracks_obj.get_tracks(grids, "/g/data/eg3/ab4502/TINTobjects/"+outname+".h5", steiner_grid)

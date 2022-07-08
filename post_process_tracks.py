@@ -239,33 +239,7 @@ def load_aws(state, year):
 	aws = aws.set_index(pd.DatetimeIndex(aws.dt_utc))
 	return aws
 
-if __name__ == "__main__":
-
-	##########
-	# INPUTS #
-	##########
-	parser = argparse.ArgumentParser()
-	parser.add_argument('-fid', type=str, help='Define file_id from TINT, which is radar id + %Y%m%d + _ + %Y%m%d')
-	parser.add_argument('--state', type=str, help='State corresponsing to the radar location (vic, nsw, qld, sa)')
-	parser.add_argument('--stns', type=int, help='A list of stations to get storms for. If blank, defaults to all stations', default=0, nargs="*")
-	parser.add_argument('--save', type=str, help='Save merged radar/AWS output? Defaults to False', default=False)
-	parser.add_argument('--min', type=int, help='The number of minutes to forward fill radar scan data with respect to one minute gusts. Defaults to 6 minutes', default=10)
-	parser.add_argument('--plot', type=str, help='Plot outputs? Defaults to False', default=False)
-	parser.add_argument('--plot_scan', type=int, help='Scan to plot, in %Y%m%d%H%M', default=0)
-	parser.add_argument('--plot_stn', type=str, help='Station to plot? Default is station with highest gust', default="none")
-	parser.add_argument('--max_stn_dist', type=int, help='The maximum distance from the radar to consider an AWS. Defaults to 100 km', default=100)
-	args = parser.parse_args()
-
-	file_id = args.fid
-	state = args.state
-	stns = args.stns
-	MIN = args.min
-	year = file_id.split("_")[1][0:4]
-	plot = args.plot
-	plot_scan = args.plot_scan
-	plot_stn = args.plot_stn
-	save = args.save
-	max_stn_dist = args.max_stn_dist
+def post_process_tracks(file_id, state, stns, save, MIN, plot, plot_scan, plot_stn, max_stn_dist):
 
 	################
 	# STATION INFO #
@@ -293,6 +267,7 @@ if __name__ == "__main__":
 	#   -> If the station is further than 100 km away from the radar
 	#   -> If the station is in the list *state*_drops contained in return_drop_list(state)
 	#   -> If the station does not have data for the time period
+	year = file_id.split("_")[1][0:4]
 	lat0 = grid.attrs['source_origin_latitude']
 	lon0 = grid.attrs['source_origin_longitude']
 	stn_df["dist_from_radar_km"] = latlon_dist(lat0, lon0, stn_df.lat.values, stn_df.lon.values)
@@ -379,3 +354,32 @@ if __name__ == "__main__":
 		plot_gust_storm_ts(aws_storms.query("stn_id=="+plot_stn).loc[slice(t1,t2)])
 		plt.suptitle(plot_stn)
 		plt.savefig("/g/data/eg3/ab4502/figs/tint/"+file_id+"_time_series.png")
+
+if __name__ == "__main__":
+
+	##########
+	# INPUTS #
+	##########
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-fid', type=str, help='Define file_id from TINT, which is radar id + %Y%m%d + _ + %Y%m%d')
+	parser.add_argument('--state', type=str, help='State corresponsing to the radar location (vic, nsw, qld, sa)')
+	parser.add_argument('--stns', type=int, help='A list of stations to get storms for. If blank, defaults to all stations', default=0, nargs="*")
+	parser.add_argument('--save', type=str, help='Save merged radar/AWS output? Defaults to False', default=False)
+	parser.add_argument('--min', type=int, help='The number of minutes to forward fill radar scan data with respect to one minute gusts. Defaults to 6 minutes', default=10)
+	parser.add_argument('--plot', type=str, help='Plot outputs? Defaults to False', default=False)
+	parser.add_argument('--plot_scan', type=int, help='Scan to plot, in %Y%m%d%H%M', default=0)
+	parser.add_argument('--plot_stn', type=str, help='Station to plot? Default is station with highest gust', default="none")
+	parser.add_argument('--max_stn_dist', type=int, help='The maximum distance from the radar to consider an AWS. Defaults to 100 km', default=100)
+	args = parser.parse_args()
+
+	file_id = args.fid
+	state = args.state
+	stns = args.stns
+	MIN = args.min
+	plot = args.plot
+	plot_scan = args.plot_scan
+	plot_stn = args.plot_stn
+	save = args.save
+	max_stn_dist = args.max_stn_dist
+
+	post_process_tracks(file_id, state, stns, save, MIN, plot, plot_scan, plot_stn, max_stn_dist)
