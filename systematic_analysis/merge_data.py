@@ -136,6 +136,13 @@ def extract_lightning_points(lightning, stn_lat, stn_lon, stn_list):
 
 	return df_out
 
+def filter_azshear(df):
+
+	df["time"] = (pd.DatetimeIndex(df.time))
+	azshear60 = df.set_index(pd.DatetimeIndex(df.time)).groupby("uid").azi_shear.rolling("60min",center=True,min_periods=2,closed="both").median()
+	df = pd.merge(df, azshear60.rename("azi_shear60"),left_on=["uid","time"],right_index=True)    
+	return df
+
 def load_tint_aws_era5_lightning(fid, state, summary="max"):
 
 	#Load the AWS one-minute gust data with TINT storm object ID within 10 and 20 km
@@ -146,6 +153,7 @@ def load_tint_aws_era5_lightning(fid, state, summary="max"):
 
 	#Load the storm statistics dataset, and merge with the AWS dataset
 	storm_df = pd.read_csv("/g/data/eg3/ab4502/TINTobjects/"+fid+".csv")
+	storm_df = filter_azshear(storm_df)
 	tint_df = tint_df.merge(storm_df, left_on=["uid10","scan"], right_on=["uid","scan"]).drop(columns=["uid0","uid20","in0km","in20km",\
 		"uid","grid_x","grid_y","bbox"])
 	
