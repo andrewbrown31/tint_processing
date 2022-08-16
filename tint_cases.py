@@ -103,7 +103,7 @@ def track_case(rid, times, smooth=True, step=1, azi_shear=True, extra_points=Fal
 
     #Initialise TINT tracks and set tracking parameters
     tracks_obj = Cell_tracks(refl_name)
-    tracks_obj.params["FIELD_THRESH"]=20
+    tracks_obj.params["FIELD_THRESH"]=30
     tracks_obj.params["MIN_SIZE"]=15
     tracks_obj.params["MIN_VOL"]=30
     tracks_obj.params["MIN_HGT"]=2
@@ -117,7 +117,7 @@ def track_case(rid, times, smooth=True, step=1, azi_shear=True, extra_points=Fal
     tracks_obj.params["AZH1"]=2
     tracks_obj.params["AZH2"]=6
     tracks_obj.params["SEGMENTATION_METHOD"]="watershed"
-    tracks_obj.params["WATERSHED_THRESH"]=[20,50]
+    tracks_obj.params["WATERSHED_THRESH"]=[30]
     tracks_obj.params["WATERSHED_SMOOTHING"]=3
     tracks_obj.params["WATERSHED_EROSION"]=0
     tracks_obj.params["MIN_FIELD"]=30
@@ -164,91 +164,7 @@ def track_case(rid, times, smooth=True, step=1, azi_shear=True, extra_points=Fal
 
 if __name__ == "__main__":
 
-    #TOBAC TESTING
-    #track_case("66", [dt.datetime(2013,11,23,9,0), dt.datetime(2013,11,23,10,0)], smooth=True, step=1, extra_points=[(-27.6297, 152.7111)], azi_shear=True, animation=False) 
-    #track_case("2", [dt.datetime(2010,3,6,2,30), dt.datetime(2010,3,6,3,30)], smooth=True, step=2, extra_points=[(-37.2091, 145.8423), (-37.6654, 144.8322)], azi_shear=True, animation=False)
-    #track_case("2", [dt.datetime(2020,1,31,3), dt.datetime(2020,1,31,12,0)], smooth=False, step=1, extra_points=[(-37.5976, 149.7289), (-37.6654, 144.8322), (-37.9483, 144.9269), (-37.9075, 144.1303), (-37.5127, 143.7911), (-37.7067, 142.9378), (-38.2332, 143.7924)], azi_shear=True, animation=True)
-    #track_case("2", [dt.datetime(2012,2,26,8,30), dt.datetime(2012,2,26,9,30)], smooth=True, step=2, extra_points=[(-37.2091, 145.8423), (-37.6654, 144.8322)], azi_shear=True, animation=False)
-    #track_case("2", [dt.datetime(2015,2,28,9), dt.datetime(2015,2,28,10)], smooth=True, step=2, extra_points=[(-38.1480, 145.1152), (-37.8565, 144.7565), (-37.6654, 144.8322)], animation=False, azi_shear=True)
-    #track_case("27", [dt.datetime(2007,10,27,8,30), dt.datetime(2007,10,27,9,30)], smooth=True, step=1, azi_shear=False, extra_points=[(-31.1558, 136.8054)], animation=False)
-    
-    #Vic
-    #Waurn ponds
-    #track_case("02", [dt.datetime(2020,5,19,12), dt.datetime(2020,5,19,18)], smooth=True, step=2, extra_points=[(-37.5127, 143.7911)])
-    #Cressy
-    #Melb airport max gust (2015)
-    #From Stacey's paper
-    #track_case("02", [dt.datetime(2011,2,4,9,0), dt.datetime(2011,2,4,9,30)], smooth=True, step=2)
-    #Melb white christmas supercell
-    #track_case("2", [dt.datetime(2011,12,25,6,35), dt.datetime(2011,12,25,6,50)], smooth=True, step=2, extra_points=[(-37.2091, 145.8423), (-37.6654, 144.8322)], azi_shear=True, animation=False)
-    #Melb 2016 Jan squall line
-    #track_case("02", [dt.datetime(2016,1,13,3), dt.datetime(2016,1,13,9)], smooth=True, step=2, extra_points=[(-37.0222, 141.2657), (-37.1017, 147.6008), (-37.8640, 144.9639), (-38.0288, 144.4783)]) 
-    #Melb Aug 2020 squall line
-    #track_case("2", [dt.datetime(2020,8,27,6), dt.datetime(2020,8,27,8,20)], smooth=True, step=2, extra_points=[(-38.5647, 146.7479), (-38.8051, 146.1936), (-38.1016, 147.1398), (-38.0288, 144.4783), (-38.2332, 143.7924)],animation=True)         
-    #Yarrawonga bow echo
-    #track_case("02", [dt.datetime(2011,9,28,6), dt.datetime(2011,9,28,12)], smooth=True, step=2, extra_points=[(-36.0690, 146.9509)])     
-    #track_case("49", [dt.datetime(2011,9,28,6), dt.datetime(2011,9,28,12)], smooth=True, step=2, extra_points=[(-36.0690, 146.9509)])  
-    #Gippsland/Dandeonong cut-off low
-    #track_case("02", [dt.datetime(2021,6,9,11,30), dt.datetime(2021,6,9,12,30)], smooth=False, step=1, azi_shear=False, extra_points=[(-36.9381, 145.0539)])     
-    #2010 SCW event
-    #AUS400
-    #track_case("68", [dt.datetime(2017,3,27,0), dt.datetime(2017,3,27,6)], smooth=False, step=1, extra_points=[(-38.8051, 146.1936),(-38.5647, 146.7479),(-38.2094, 146.4746)],\
-	    #azi_shear=False, animation=True)
-    #MELB 2021
-    #track_case("2", [dt.datetime(2012,2,26,8,30), dt.datetime(2012,2,26,9,30)], smooth=True, step=2, extra_points=[(-37.6654, 144.8322)], azi_shear=True, animation=True)
-    #track_case("2", [dt.datetime(2009,4,26,0,0), dt.datetime(2009,4,26,3,0)], smooth=True, step=1, extra_points=[(-37.6654, 144.8322)], azi_shear=True, animation=True)
-    
-
-    #NSW
-    #Kurnell
-    #track_case("71", [dt.datetime(2015,12,16,1,30), dt.datetime(2015,12,16,2,30)], smooth=False, step=1, extra_points=[(-33.9465, 151.1731)],animation=True,azi_shear=True)
-    #Boorowa outage NSW
-    #track_case("71", [dt.datetime(2020,12,1,3), dt.datetime(2020,12,1,9)], smooth=True, step=2, extra_points=[(-33.8382, 148.6540), (-34.2493, 148.2475)])
-    #track_case("40", [dt.datetime(2020,12,1,4), dt.datetime(2020,12,1,5)], smooth=True, step=1, extra_points=[(-34.356940, 148.738652)],animation=True)           
-    #Sydneys
-    #track_case("71", [dt.datetime(2016,1,14,3), dt.datetime(2016,1,14,9)], smooth=True, step=2, extra_points=[(-33.9465, 151.1731)])           
-    #track_case("71", [dt.datetime(2014,10,14,11), dt.datetime(2014,10,14,12)], smooth=True, step=2, extra_points=[(-33.9465, 151.1731)], animation=True)           
-    #track_case("71", [dt.datetime(2016,6,4,3), dt.datetime(2016,6,4,4)], smooth=True, step=2, extra_points=[(-33.9465, 151.1731)], animation=True)           
-    #track_case("71", [dt.datetime(2014,6,28,6), dt.datetime(2014,6,28,7)], smooth=True, step=2, extra_points=[(-33.9465, 151.1731)], animation=True)           
-    #Wagga
-    #track_case("55", [dt.datetime(2009,1,20,4), dt.datetime(2009,1,20,7)], smooth=True, step=2, extra_points=[(-35.1583, 147.4575)],animation=True,azi_shear=False)           
-    #track_case("55", [dt.datetime(2017,3,27,6,30), dt.datetime(2017,3,27,7,30)], smooth=True, step=2, extra_points=[(-35.1583, 147.4575)],animation=True,azi_shear=True)
-    #Coffs
-    #track_case("28", [dt.datetime(2011,3,1,8,0), dt.datetime(2011,3,1,10,0)], smooth=True, step=2, extra_points=[(-30.3107, 153.1187)],animation=True,azi_shear=False)
-    #track_case("28", [dt.datetime(2012,2,12,9,30), dt.datetime(2012,2,12,10,30)], smooth=True, step=2, extra_points=[(-30.3107, 153.1187)],animation=True,azi_shear=False)
-    #Newcastle (Williamtown)
-    #track_case("4", [dt.datetime(2015,4,20,23), dt.datetime(2015,4,21,0,59)], smooth=True, step=2, extra_points=[(-32.7939, 151.8364)],animation=False,azi_shear=True)           
-
-    #QLD
-    #Double point island gust (16 December 2006) from Gympie radar
-    #track_case("8", [dt.datetime(2006,12,16,0), dt.datetime(2006,12,16,9)], smooth=True, step=1, azi_shear=False, extra_points=[(-25.9319, 153.1906)], animation=True)
-    #Double point island gust from Brisbane radar
-    #track_case("43", [dt.datetime(2006,12,16,6), dt.datetime(2006,12,16,9)], smooth=True, step=1)    
-    #38.6 m/s SCW gust for Oakey (strongest gust in 202 events from Brown and Dowdy 2021)
-    #track_case("50", [dt.datetime(2011,10,7,19), dt.datetime(2011,10,7,20)], smooth=True, step=1, extra_points=[(-27.4034, 151.7413)], azi_shear=False, animation=True)        
-    #OAKEYs
-    #track_case("50", [dt.datetime(2013,10,18,4), dt.datetime(2013,10,18,5)], smooth=True, step=1, extra_points=[(-27.4034, 151.7413)], azi_shear=False, animation=True)        
-    #track_case("50", [dt.datetime(2018,2,13,6,30), dt.datetime(2018,2,13,7,30)], smooth=True, step=1, extra_points=[(-27.4034, 151.7413)], azi_shear=False, animation=True)        
-    #track_case("50", [dt.datetime(2014,9,25,4), dt.datetime(2014,9,25,5)], smooth=True, step=1, extra_points=[(-27.4034, 151.7413)], azi_shear=False, animation=True)        
-    #The gap
-    #track_case("66", [dt.datetime(2008,11,16,3), dt.datetime(2008,11,16,9)], smooth=True, step=1, extra_points=[(-27.4034, 151.7413)], azi_shear=True, animation=True)        
-    #Archerfield
-    #track_case("66", [dt.datetime(2014,11,27,6), dt.datetime(2014,11,27,7)], smooth=True, step=1, extra_points=[(-27.5716, 153.0071)], azi_shear=True, animation=True)        
-    #Amberly
-    #track_case("66", [dt.datetime(2016,12,18,4), dt.datetime(2016,12,18,5)], smooth=True, step=1, extra_points=[(-27.6297, 152.7111)], azi_shear=True, animation=True)        
-    #track_case("66", [dt.datetime(2011,1,18,4,30), dt.datetime(2011,1,18,5,30)], smooth=True, step=1, extra_points=[(-27.6297, 152.7111)], azi_shear=True, animation=True) 
-    #Charleville
-    #track_case("38", [dt.datetime(2005,1,22,5), dt.datetime(2005,1,22,6)], smooth=True, step=1, extra_points=[(-26.4139, 146.2558)], azi_shear=False, animation=True) 
-
-    #SA
-    #Woomera
-    #track_case("27", [dt.datetime(2010,12,7,8), dt.datetime(2010,12,7,11)], smooth=True, step=1, azi_shear=False, extra_points=[(-31.1558, 136.8054)], animation=True)
-
-    #Null cases
-    #track_case("2", [dt.datetime(2020,1,3,0), dt.datetime(2020,1,4,0,0)], smooth=False, step=1, extra_points=[(-27.4034, 151.7413)], azi_shear=False, animation=True)        
-    #track_case("66", [dt.datetime(2013,5,10,22), dt.datetime(2013,5,11,0,0)], smooth=False, step=1, extra_points=[(-27.4034, 151.7413)], azi_shear=False, animation=True)        
-    #track_case("50", [dt.datetime(2006,1,1,0), dt.datetime(2006,1,1,12,0)], smooth=False, step=1, extra_points=[(-27.4034, 151.7413)], azi_shear=False, animation=True)        
-    #track_case("2", [dt.datetime(2020,1,4,11,30), dt.datetime(2020,1,4,12,30)], smooth=False, step=1, extra_points=[(-37.5976, 149.7289), (-37.6654, 144.8322), (-37.9483, 144.9269), (-37.9075, 144.1303), (-37.5127, 143.7911), (-37.7067, 142.9378), (-38.2332, 143.7924)], azi_shear=True, animation=True)
+    track_case("66", [dt.datetime(2011,1,10,17,0), dt.datetime(2011,1,11,10,0)], smooth=True, step=1, extra_points=[(-27.6297, 152.7111)], azi_shear=True, animation=True) 
 
     #Auto cases
     #df=pd.read_csv("/g/data/eg3/ab4502/figs/ExtremeWind/case_studies/case_study_list.csv")
@@ -257,8 +173,8 @@ if __name__ == "__main__":
 		#[pd.to_datetime(row.gust_time_utc)+dt.timedelta(hours=-0.5), pd.to_datetime(row.gust_time_utc)+dt.timedelta(hours=0.5)],
 		#smooth=False, step=1, azi_shear=True, animation=False)
 
-    df=pd.read_csv("/g/data/eg3/ab4502/figs/ExtremeWind/case_studies/case_study_list.csv")
-    for index, row in df[df.stn_name=="Sydney"].iloc[0:1].iterrows():
-        track_case("71",
-		[pd.to_datetime(row.gust_time_utc)+dt.timedelta(hours=-0.5), pd.to_datetime(row.gust_time_utc)+dt.timedelta(hours=0.5)],
-		smooth=False, step=1, azi_shear=True, animation=False)
+    #df=pd.read_csv("/g/data/eg3/ab4502/figs/ExtremeWind/case_studies/case_study_list.csv")
+    #for index, row in df[df.stn_name=="Sydney"].iloc[0:1].iterrows():
+    #    track_case("71",
+#		[pd.to_datetime(row.gust_time_utc)+dt.timedelta(hours=-0.5), pd.to_datetime(row.gust_time_utc)+dt.timedelta(hours=0.5)],
+#		smooth=False, step=1, azi_shear=True, animation=False)
