@@ -1,3 +1,4 @@
+import argparse
 import pandas as pd
 import numpy as np
 import glob
@@ -23,9 +24,15 @@ def load_scws(rid,year,month):
     temp_df = pd.read_pickle("/g/data/eg3/ab4502/ExtremeWind/points/era5_aws_tint_"+rid+"_"+d1.strftime("%Y%m%d")+"_"+d2.strftime("%Y%m%d")+"_max.pkl")
     temp_df["dt_utc"] = pd.DatetimeIndex(temp_df.dt_utc)
     temp_df = temp_df.sort_values("dt_utc")
-    rolling = temp_df[["gust","stn_id","dt_utc"]].groupby("stn_id").rolling("4H",center=True,on="dt_utc",closed="both").mean()
-    temp_df = pd.merge(temp_df,rolling.rename(columns={"gust":"rolling4"}),on=["stn_id","dt_utc"])
+    #rolling = temp_df[["gust","stn_id","dt_utc"]].groupby("stn_id").rolling("4H",center=True,on="dt_utc",closed="both").mean()
+    rolling4 = temp_df[["gust","stn_id","dt_utc"]].set_index("dt_utc").groupby("stn_id").rolling("4H",center=True,closed="both",min_periods=60).mean()
+    rolling2b = temp_df[["gust","stn_id","dt_utc"]].set_index("dt_utc").groupby("stn_id").rolling("2H",center=False,closed="both",min_periods=30).mean()
+    rolling2a = temp_df[["gust","stn_id","dt_utc"]].set_index("dt_utc").shift(freq="-2H").groupby("stn_id").rolling("2H",center=False,closed="both",min_periods=30).mean()
+    rolling = pd.concat([rolling4.rename(columns={"gust":"rolling4"}),rolling2a.rename(columns={"gust":"rolling2a"}),rolling2b.rename(columns={"gust":"rolling2b"})],axis=1)
+    temp_df = pd.merge(temp_df,rolling,on=["stn_id","dt_utc"])
     temp_df["wgr_4"] = temp_df["gust"] / temp_df["rolling4"]
+    temp_df["wgr_2a"] = temp_df["gust"] / temp_df["rolling2a"]
+    temp_df["wgr_2b"] = temp_df["gust"] / temp_df["rolling2b"]
     temp_df = temp_df.dropna(subset=["gust"])
     
     #Get all SCW events as a separate dataframe. Options for how to define "separate" events:
@@ -35,7 +42,7 @@ def load_scws(rid,year,month):
     #	stns = events which occur more than one hour apart or at different stations
     #Also record the number of stations that measured a SCW event for each 1) hourly inverval and 2) storm ID
     #temp_df["hour_group"] = 0
-    scws_envs = temp_df.query("(gust>=25) & (in10km ==1) & (wgr_4 >= 1.5)").copy().reset_index()
+    scws_envs = temp_df.query("(gust>=25) & (in10km ==1) & (wgr_4 >= 2)").copy().reset_index()
     #keep_inds = []
     drop="domain"
     i=0
@@ -71,10 +78,10 @@ def load_scws(rid,year,month):
     #scws_envs = scws_envs.sort_values("dt_utc").sort_values("gust",ascending=False).drop_duplicates("hour_group").sort_values("dt_utc").drop(columns=["hour_group"])
     scws_envs = scws_envs.sort_values("dt_utc")
 
-    #Create a dataframe for non-events for the purposes of environmental analysis. Defined as hourly occurrences at different ERA5 grid points with a neighbouring AWS, which
-    # does not record a SCW event in the following hour. Note that if a radar object is observed at the station neighbouring the ERA5 grid point in the following hour,
+    #Create a dataframe for non-events for the purposes of environmental analysis. Defined as hourly occurrences at all unique ERA5 grid points with a neighbouring AWS, which
+    # do not record a SCW event in the following hour. Note that if a radar object is observed at the station neighbouring the ERA5 grid point in the following hour,
     # then "in10km" is equal to 1.
-    temp_df["scw"] = np.where((temp_df.gust>=25) & (temp_df.wgr_4>=1.5) & (temp_df.in10km==1),1,0)
+    temp_df["scw"] = np.where((temp_df.gust>=25) & (temp_df.wgr_4>=2) & (temp_df.in10km==1),1,0)
     non_scw_envs = temp_df.sort_values(["scw","in10km","gust"],ascending=False).\
 	drop_duplicates(subset=["hour_floor","era5_lat","era5_lon"]).query("scw==0").sort_values("dt_utc")
     
@@ -119,10 +126,13 @@ def load_scws_driver(rid,start_year,end_year):
 
 if __name__ == "__main__":
 
-    load_scws_driver("2",2008,2020)
-    #load_scws_driver("49",2006,2020)
-    load_scws_driver("66",2006,2020)
-    load_scws_driver("69",2010,2020)
-    load_scws_driver("70",2013,2020)
-    load_scws_driver("71",2009,2020)
-    #load_scws_driver("75",2012,2020)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-rid', type=str)
+    parser.add_argument('-y1', type=int)
+    parser.add_argument('-y2', type=int)
+    args = parser.parse_args()
+    rid = args.rid
+    y1 = args.y1	
+    y2 = args.y2
+
+    load_scws_driver(rid,y1,y2)
