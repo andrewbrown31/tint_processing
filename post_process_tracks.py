@@ -17,21 +17,26 @@ def return_drop_list(state):
 
 	#Contains lists of stations to drop from each state. Generally either too high above sea level, or offshore.    
     
-	assert state in ["qld","nsw","vic","sa","wa","vic_nsw"]
+	assert state in ["qld","nsw","vic","sa","wa","vic_nsw","tas","nt"]
 
 	if state=="qld":
 		return [41175, 200840, 200601, 200736, 200783, 200701, 200831, 200732, 200704, 200001,\
-				200283, 39122, 39059, 27058, 27054, 40927, 40926, 40925, 40043]
+				200283, 39122, 39059, 27058, 27054, 40927, 40926, 40925, 40043, 31037]
 	elif state=="vic":
 		return [83084, 86376, 79103, 82139, 86381, 85291, 83024, 83085, 79101, 86344]
 	elif state=="nsw":
-		return [56238, 72161, 56243, 63292, 70349, 62100, 71075, 71032, 200288, 200839, 66196]
+		return [56238, 72161, 56243, 63292, 70349, 62100, 71075, 71032, 200288, 200839, 66196, 66062, 70349, 69017 ]
 	elif state=="wa":
 		return [9091,9193,9255,9256]
 	elif state=="sa":
 		return []
 	elif state=="vic_nsw":
+		#This is only really relevant for Yarrawonga radar that's on the border
 		return [83084, 86376, 79103, 82139, 86381, 85291, 83024, 83085, 79101, 86344, 56238, 72161, 56243, 63292, 70349, 62100, 71075, 71032, 200288, 200839, 66196]
+	elif state=="tas":
+		return [94087]
+	elif state=="nt":
+		return [14056, 14274]
 
 def plot_gust_storm_ts(aws_storms):
         
@@ -220,6 +225,14 @@ def read_stn_info(state):
 		stn_df2 = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/nsw_one_min_gust/HD01D_StnDet_*.txt")[0],\
 		    names=names, header=0)
 		stn_df = pd.concat([stn_df1, stn_df2], axis=0)
+	elif state=="nt":
+		stn_df = pd.concat(\
+		    [pd.read_csv(f, names=names, header=None) for f in glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/nt_one_min_gust/HD01D_StnDet_*.txt")],axis=0).\
+                    sort_values("stn_name")                
+	elif state=="tas":
+		stn_df = pd.concat(\
+		    [pd.read_csv(f, names=names, header=None) for f in glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/tas_one_min_gust/HD01D_StnDet_*.txt")],axis=0).\
+                    sort_values("stn_name")  
 	else:
 		stn_df = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/"+state+"_one_min_gust/HD01D_StnDet_*.txt")[0],\
 		    names=names, header=0)
@@ -251,13 +264,18 @@ def post_process_tracks(file_id, state, stns, save, MIN, plot, plot_scan, plot_s
 	# STORM TRACKS #
 	################
 	#Load .csv TINT track output
-	storm_df = pd.read_csv("/g/data/eg3/ab4502/TINTobjects/"+file_id+".csv")
-	#Load h5 file from TINT output
-	#NOTE: The following line assumes that there was at least one storm on the date that is given to this script. A h5 file isn't saved otherwise.
-	    #Possible fix is to save a null h5 in that case
-	grid = h5py.File("/g/data/eg3/ab4502/TINTobjects/"+file_id+".h5", "r")
+	try:
+		storm_df = pd.read_csv("/g/data/eg3/ab4502/TINTobjects/"+file_id+".csv")
+	except:
+		raise ValueError("THERE IS NOT CSV FILE FOR THIS DATE RANGE")
 	#Add a "group_id" to the .csv file, which will be used to index the h5 file
 	storm_df["group_id"] = pd.DatetimeIndex(storm_df["time"]).strftime("%Y%m%d%H%M%S") + "/" + storm_df["uid"].astype(str)
+
+	if storm_df.uid.max() > -1:
+		#Load h5 file from TINT output
+		#NOTE: The following line assumes that there was at least one storm on the date that is given to this script. A h5 file isn't saved otherwise.
+		    #Possible fix is to save a null h5 in that case
+		grid = h5py.File("/g/data/eg3/ab4502/TINTobjects/"+file_id+".h5", "r")
 
 	#####################
 	# STATION SELECTION #
@@ -268,8 +286,11 @@ def post_process_tracks(file_id, state, stns, save, MIN, plot, plot_scan, plot_s
 	#   -> If the station is in the list *state*_drops contained in return_drop_list(state)
 	#   -> If the station does not have data for the time period
 	year = file_id.split("_")[1][0:4]
-	lat0 = grid.attrs['source_origin_latitude']
-	lon0 = grid.attrs['source_origin_longitude']
+	#lat0 = grid.attrs['source_origin_latitude']
+	#lon0 = grid.attrs['source_origin_longitude']
+	rid = file_id.split("_")[0]
+	lat0 = xr.open_dataset(glob.glob("/g/data/rq0/level_2/"+rid+"/COLUMNMAXREFLECTIVITY/*")[-1]).attrs['origin_latitude']
+	lon0 = xr.open_dataset(glob.glob("/g/data/rq0/level_2/"+rid+"/COLUMNMAXREFLECTIVITY/*")[-1]).attrs['origin_longitude']
 	stn_df["dist_from_radar_km"] = latlon_dist(lat0, lon0, stn_df.lat.values, stn_df.lon.values)
 	stn_df = stn_df[(\
 			    np.in1d(stn_df.stn_no, return_drop_list(state), invert=True)) &\
@@ -280,41 +301,75 @@ def post_process_tracks(file_id, state, stns, save, MIN, plot, plot_scan, plot_s
 	else:
 	    stn_df = stn_df[np.in1d(stn_df.stn_no, stns)]
 
-	#################
-	# GRID STATIONS #
-	#################
-	#Grid station info (w.r.t. the TINT h5 grid), and append grid coordinates to "station info" dataframe
-	x, y = (grid["lon/lon"][:], grid["lat/lat"][:])
-	gridded_stn, stn_df = stns2grid(stn_df, x, y)
+	if stn_df.shape[0] == 0:
+		raise ValueError("THERE ARE NO AWS THAT SATISFY CRITERIA FOR THIS TIME/RID/MAX_STN_DIST")
 
-	#############################
-	# ASSIGN STATIONS TO STORMS #
-	#############################
-	isstorm = assign_stations(stn_df, storm_df, grid)
-	storm = isstorm.set_index(pd.DatetimeIndex(isstorm["time"]).round("1min")).sort_index()
-	#Drop duplicates that are created by rounding time (this would only occur when scans are within 2 
-	# minutes, and only happens once in the whole Melbourne radar archive
-	storm = storm.drop(columns=["time"]).reset_index().drop_duplicates(subset=["time","stn_no"]).set_index("time")
-    
-        ###################
-	# FILL IN TRACKS  #
-        ###################
-	#Currently, wind gusts are only considered if there is a radar scan within MIN minutes before the gust.
-	#Have been setting MIN to 10 minutes, as this is the longest time between scans in the openradar dataset.
-	#Could potentially consider interpolating the location of storms based on fitting a line to x/y coordinates.
+	if storm_df.uid.max() > -1:
 
-        ##########################
-	# ASSIGN GUSTS TO STORMS #
-        ##########################
-	#Merge the one-minute AWS data with storm data, up-sampled to one-minute frequency by forward filling over MIN intervals.
-	#Done separately for each station
-	print("Merging AWS and TINT data...")
-	aws = load_aws(state, year)
-	aws = aws[aws["q"]=="Y"]
-	if stns == 0:
-		stns = np.unique(stn_df.stn_no.values)
-	aws_storms = pd.merge(storm[np.in1d(storm.stn_no,stns)].groupby("stn_no").resample("1min").asfreq().ffill(limit=MIN).drop(columns=["stn_no"]),
-			aws[["stn_id","dt_lt","gust","q"]], how="inner", left_index=True, right_on=["stn_id","dt_utc"])
+		#################
+		# GRID STATIONS #
+		#################
+		#Grid station info (w.r.t. the TINT h5 grid), and append grid coordinates to "station info" dataframe
+		x, y = (grid["lon/lon"][:], grid["lat/lat"][:])
+		gridded_stn, stn_df = stns2grid(stn_df, x, y)
+
+		#############################
+		# ASSIGN STATIONS TO STORMS #
+		#############################
+		isstorm = assign_stations(stn_df, storm_df, grid)
+		storm = isstorm.set_index(pd.DatetimeIndex(isstorm["time"]).round("1min")).sort_index()
+		#Drop duplicates that are created by rounding time (this would only occur when scans are within 2 
+		# minutes, and only happens once in the whole Melbourne radar archive
+		storm = storm.drop(columns=["time"]).reset_index().drop_duplicates(subset=["time","stn_no"]).set_index("time")
+	    
+		###################
+		# FILL IN TRACKS  #
+		###################
+		#Currently, wind gusts are only considered if there is a radar scan within MIN minutes before the gust.
+		#Have been setting MIN to 10 minutes, as this is the longest time between scans in the openradar dataset.
+		#Could potentially consider interpolating the location of storms based on fitting a line to x/y coordinates.
+
+		##########################
+		# ASSIGN GUSTS TO STORMS #
+		##########################
+		#Merge the one-minute AWS data with storm data, up-sampled to one-minute frequency by forward filling over MIN intervals.
+		#Done separately for each station
+		print("Merging AWS and TINT data...")
+		aws = load_aws(state, year)
+		aws = aws[aws["q"]=="Y"]
+		if stns == 0:
+			stns = np.unique(stn_df.stn_no.values)
+		aws_storms = pd.merge(storm[np.in1d(storm.stn_no,stns)].groupby("stn_no").resample("1min").asfreq().ffill(limit=MIN).drop(columns=["stn_no"]),
+				aws[["stn_id","dt_lt","gust","q"]], how="inner", left_index=True, right_on=["stn_id","dt_utc"])
+
+	else:
+		print("INFO: NO H5 STORM OBJECT FILE...FILLING WITH NULLS")
+
+		if stns == 0:
+			stns = np.unique(stn_df.stn_no.values)
+
+		storm_df = storm_df.set_index(pd.DatetimeIndex(storm_df["time"]).round("1min")).sort_index()
+		storm_df = storm_df.drop(columns=["time"]).reset_index().drop_duplicates(subset=["time"]).set_index("time")
+		storm = pd.DataFrame()
+		for s in stns:
+			storm_df["stn_no"] = s
+			storm = pd.concat([storm_df, storm],axis=0)
+
+		aws = load_aws(state, year)
+		aws = aws[(aws["q"]=="Y")]
+		aws_storms = pd.merge(storm.groupby("stn_no").resample("1min").asfreq().ffill(limit=MIN).drop(columns=["stn_no"]),
+                                aws[["stn_id","dt_lt","gust","q"]], how="inner", left_index=True, right_on=["stn_id","dt_utc"])
+		aws_storms["uid0"] = -1.0
+		aws_storms["uid10"] = -1.0
+		aws_storms["uid20"] = -1.0
+		aws_storms["dist0km"] = 0.0
+		aws_storms["dist10km"] = 0.0
+		aws_storms["dist20km"] = 0.0
+		aws_storms["in0km"] = 0.0
+		aws_storms["in10km"] = 0.0
+		aws_storms["in20km"] = 0.0
+		aws_storms = aws_storms[["group_id","scan","uid0","uid10","uid20","dist0km","dist10km","dist20km","in0km","in10km","in20km","stn_id","dt_lt","gust","q"]]
+
 	if save=="True":
 		aws_storms.to_csv("/g/data/eg3/ab4502/TINTobjects/"+file_id+"_aws.csv")
 
