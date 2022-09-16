@@ -1,3 +1,4 @@
+from sklearn.cluster import KMeans as kmeans
 import argparse
 import joblib
 from GadiClient import GadiClient
@@ -54,6 +55,14 @@ def load_stn_info(state):
 		stn_info2 = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/nsw_one_min_gust/HD01D_StnDet_*.txt")[0],\
 			names=names, header=0)
 		stn_info = pd.concat([stn_info1, stn_info2], axis=0)
+	elif state=="nt":
+		stn_info = pd.concat(\
+		    [pd.read_csv(f, names=names, header=None) for f in glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/nt_one_min_gust/HD01D_StnDet_*.txt")],axis=0).\
+		    sort_values("stn_name")
+	elif state=="tas":
+		stn_info = pd.concat(\
+		    [pd.read_csv(f, names=names, header=None) for f in glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/tas_one_min_gust/HD01D_StnDet_*.txt")],axis=0).\
+		    sort_values("stn_name")
 	else:
 		stn_info = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/"+state+"_one_min_gust/HD01D_StnDet_*.txt")[0],\
 			names=names, header=0)
@@ -143,6 +152,107 @@ def filter_azshear(df):
 	df = pd.merge(df, azshear60.rename("azi_shear60"),left_on=["uid","time"],right_index=True)    
 	return df
 
+def latlon_dist(lat, lon, lats, lons):
+
+        #Calculate great circle distance (Harversine) between a lat lon point (lat, lon) and a list of lat lon
+        # points (lats, lons)
+                        
+        R = 6373.0
+                        
+        lat1 = np.deg2rad(lat)
+        lon1 = np.deg2rad(lon)
+        lat2 = np.deg2rad(lats)
+        lon2 = np.deg2rad(lons)
+                
+        dlon = lon2 - lon1
+        dlat = lat2 - lat1
+
+        a = np.sin(dlat / 2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2)**2
+        c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
+
+        return (R * c)
+
+def get_mask(lon,lat,thresh=0.5):
+    #Return lsm for a given domain (with lats=lat and lons=lon)
+    lsm,nat_lon,nat_lat = get_lsm()
+    lon_ind = np.where((nat_lon >= lon[0]) & (nat_lon <= lon[-1]))[0]
+    lat_ind = np.where((nat_lat >= lat[-1]) & (nat_lat <= lat[0]))[0]
+    lsm_domain = lsm[(lat_ind[0]):(lat_ind[-1]+1),(lon_ind[0]):(lon_ind[-1]+1)]
+    lsm_domain = np.where(lsm_domain > thresh, 1, 0)
+
+    return lsm_domain
+
+def get_lsm():
+    #Load the ERA5 land-sea fraction
+    lsm_file = nc.Dataset("/g/data/rt52/era5/single-levels/reanalysis/lsm/1979/lsm_era5_oper_sfc_19790101-19790131.nc")
+    lsm = np.squeeze(lsm_file.variables["lsm"][0])
+    lsm_lon = np.squeeze(lsm_file.variables["longitude"][:])
+    lsm_lat = np.squeeze(lsm_file.variables["latitude"][:])
+    lsm_file.close()
+    return [lsm,lsm_lon,lsm_lat]
+
+
+def get_point_data(time,lat,lon,r,var,plot=False,vmin=None,vmax=None):
+    
+    f = xr.open_dataset(glob.glob("/g/data/eg3/ab4502/ExtremeWind/aus/era5/era5_"\
+                            +time.strftime("%Y%m")+"*.nc")[0])[var].sel({"time":time.replace(minute=0)})
+    
+    lats = f.coords.get("lat").values
+    lons = f.coords.get("lon").values
+    x,y = np.meshgrid(lons,lats)
+    dist_km = (latlon_dist(lat, lon, y, x) )
+    mask = get_mask(lons,lats)
+    a,b = np.where( (dist_km <= r) & (mask == 1) )
+    target_lons = xr.DataArray(lons[b],dims="points")
+    target_lats = xr.DataArray(lats[a],dims="points")    
+    f_slice = (f.sel(lon=target_lons, lat=target_lats))
+    
+    if plot:
+        plt.figure()
+        ax=plt.axes(projection=ccrs.PlateCarree())
+        temp = np.where((dist_km <= r) & (mask == 1), f.values, np.nan)
+        c=ax.pcolormesh(x,y,temp,vmin=vmin,vmax=vmax)
+        plt.colorbar(c)
+        ax.coastlines()
+    
+    #Return the value of the point with the highest absolute value
+    return pd.DataFrame([f_slice[v].values[np.abs(f_slice[v]).argmax()] for v in var], index=var)
+
+def get_env_clusters():
+	#This is just the code from auto_case_driver/kmeans_and_cluster_eval.ipynb - instead of loading in the clustering from disk
+	details_list = pd.read_csv("/g/data/eg3/ab4502/figs/ExtremeWind/case_studies/case_study_list.csv")
+	details_list["gust_time_utc"] = pd.DatetimeIndex(details_list.gust_time_utc)
+	details_list["rid"] = details_list.rid.astype(str)
+	details_list["stn_id"] = details_list.stn_id.astype(str).str.pad(width=6,side="left",fillchar="0")
+	var=["s06","qmean01","lr13","Umean06"]
+	df = pd.DataFrame()
+	for index, row in details_list.iterrows():
+		df = pd.concat([df, 
+			get_point_data(row["gust_time_utc"], row["lat"], row["lon"], 50, var, plot=False).T],
+				axis=0)
+
+	df_norm = (df - df.min(axis=0)) / (df.max(axis=0) - df.min(axis=0))
+	mod=kmeans(n_clusters=3, verbose=0, random_state=0)
+	mod_fit=mod.fit(df_norm[var])
+	cluster_index = mod_fit.predict(df_norm[var])
+
+	return mod_fit, df
+
+def add_missing_cols(df):
+
+	#For "tint_df" dataframes that are created when there are no storm objects, ellipse-fit statistics, such as
+	#eccentricity, are not calculated. This function just adds these columns and fills with NaNs
+
+	cols = ["eccentricity","major_axis_length","minor_axis_length","bbox","speed_rnge","num_of_scans","duration_mins"]
+	for c in cols:
+		if c not in list(df.columns):
+			if c == "num_of_scans":
+				df[c] = 0
+			else:
+				df[c] = np.nan	
+
+	return df
+
 def load_tint_aws_era5_lightning(fid, state, summary="max"):
 
 	#Load the AWS one-minute gust data with TINT storm object ID within 10 and 20 km
@@ -154,7 +264,7 @@ def load_tint_aws_era5_lightning(fid, state, summary="max"):
 	#Load the storm statistics dataset, and merge with the AWS dataset
 	storm_df = pd.read_csv("/g/data/eg3/ab4502/TINTobjects/"+fid+".csv")
 	storm_df = filter_azshear(storm_df)
-	tint_df = tint_df.merge(storm_df, left_on=["uid10","scan"], right_on=["uid","scan"]).drop(columns=["uid0","uid20","in0km","in20km",\
+	tint_df = tint_df.merge(add_missing_cols(storm_df), left_on=["uid10","scan"], right_on=["uid","scan"]).drop(columns=["uid0","uid20","in0km","in20km",\
 		"uid","grid_x","grid_y","bbox"])
 	
 	#Load AWS info to retrieve lat lon information
@@ -178,7 +288,7 @@ def load_tint_aws_era5_lightning(fid, state, summary="max"):
 	era5_subset = calc_bdsd(era5_subset)
 
 	print("extracting data...")
-	#Extract point data within 50 km of each station (mean, min and max)
+	#Extract point data within 50 km of each station (mean, min or max)
 	era5_df = extract_era5_df(era5_subset, rad_lats, rad_lons,stn_list,summary)
 
 	#Add lat lon info
@@ -192,17 +302,17 @@ def load_tint_aws_era5_lightning(fid, state, summary="max"):
 	#Lightning data
 	#Merge ERA5 and Lightning hourly data, then merge the hourly data with one minute AWS/TINT data
 	year = int(fid.split("_")[1][0:4])
-	if year >= 2005:
+	if (year >= 2005) & (year <= 2020):
 		lightning = load_lightning(fid)
 		lightning_df = extract_lightning_points(lightning, stn_lat, stn_lon, stn_list).reset_index()
 		era5_df = era5_df.merge(lightning_df, on=["time","stn_id"])
 	else:
+		print("NOTE THAT LIGHTNING DATA IS NOT AVAILABLE FOR THIS YEAR")
 		era5_df["Lightning_observed"] = np.nan
 	aws_era5_tint = tint_df.merge(era5_df,left_on=["hour_floor","stn_id"], right_on=["time","stn_id"])
 
 	#Load clustering classification model saved by ~/working/observations/tint_processing/auto_case_driver/kmeans_and_cluster_eval.ipynb
-	cluster_mod = joblib.load('/g/data/eg3/ab4502/figs/ExtremeWind/case_studies/cluster_model_era5.pkl')
-	cluster_input = pd.read_csv("/g/data/eg3/ab4502/figs/ExtremeWind/case_studies/cluster_input_era5.csv").drop(columns=["Unnamed: 0"])
+	cluster_mod, cluster_input = get_env_clusters()
 	input_df = (aws_era5_tint[["s06","qmean01","lr13","Umean06"]]\
 		   - cluster_input.min(axis=0))\
 	    / (cluster_input.max(axis=0) - \
