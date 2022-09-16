@@ -8,15 +8,35 @@ import tqdm
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+def remove_suspect_gusts(df):
+    dts = ["2010-12-14 07:03:00","2011-01-11 03:49:00","2015-12-15 23:33:00","2020-02-09 01:00:00","2020-02-09 03:18:00","2020-05-25 06:11:00"]
+    return df[np.in1d(df.dt_utc,dts,invert=True)]
+
 def load_scws(rid):
-    print("loading "+rid+"...")
+
     df1 = pd.read_csv("/g/data/eg3/ab4502/ExtremeWind/points/"+rid+"_scw_envs_df.csv")
+    df1["rid"] = rid  
+    df1["scw"] = 1
+    
+    return df1
+
+def load_nulls(rid):
+    
     df2 = pd.read_csv("/g/data/eg3/ab4502/ExtremeWind/points/"+rid+"_non_scw_envs_df.csv")
-    df1["rid"]=rid
-    df2["rid"]=rid
-    df1["scw"]=1
-    df2["scw"]=0
-    return df1, df2
+    df2["rid"] = rid   
+    df2["scw"] = 0
+    
+    return df2
+
+#def load_scws(rid):
+#    print("loading "+rid+"...")
+#    df1 = pd.read_csv("/g/data/eg3/ab4502/ExtremeWind/points/"+rid+"_scw_envs_df.csv")
+#    df2 = pd.read_csv("/g/data/eg3/ab4502/ExtremeWind/points/"+rid+"_non_scw_envs_df.csv")
+#    df1["rid"]=rid
+#    df2["rid"]=rid
+#    df1["scw"]=1
+#    df2["scw"]=0
+#    return df1, df2
 
 def skill(events, nulls, t, v, scores="TSS"):
     
@@ -40,7 +60,7 @@ def skill_test(scw,null,v,scores="TSS"):
     if scores != "AUC":
         score = [skill(scw,null,i,v,scores=scores) for i in x]
     elif scores == "AUC":
-        temp = pd.concat([scw[[v,"scw"]], null[[v,"scw"]]], axis=0)
+        temp = pd.concat([scw[[v,"scw"]], null[[v,"scw"]]], axis=0).dropna()
         score = [roc_auc_score(temp["scw"],temp[v])]
         x = [np.nan]
     else:
@@ -50,17 +70,17 @@ def skill_test(scw,null,v,scores="TSS"):
 
 def resample_test(df_scw, df_scw1, df_scw2, df_scw3, df_null, df_null1, df_null2, df_null3, metric, N, var_list):
 
-    output_skill = pd.DataFrame(columns=test_vars)
-    output_thresh = pd.DataFrame(columns=test_vars)    
-    output_skill1 = pd.DataFrame(columns=test_vars)
-    output_thresh1 = pd.DataFrame(columns=test_vars)
-    output_skill2 = pd.DataFrame(columns=test_vars)
-    output_thresh2 = pd.DataFrame(columns=test_vars)
-    output_skill3 = pd.DataFrame(columns=test_vars)
-    output_thresh3 = pd.DataFrame(columns=test_vars)
+    output_skill = pd.DataFrame(columns=var_list)
+    output_thresh = pd.DataFrame(columns=var_list)    
+    output_skill1 = pd.DataFrame(columns=var_list)
+    output_thresh1 = pd.DataFrame(columns=var_list)
+    output_skill2 = pd.DataFrame(columns=var_list)
+    output_thresh2 = pd.DataFrame(columns=var_list)
+    output_skill3 = pd.DataFrame(columns=var_list)
+    output_thresh3 = pd.DataFrame(columns=var_list)
 
 
-    for v in tqdm.tqdm(test_vars):
+    for v in tqdm.tqdm(var_list):
         temp_tss = []
         temp_t = []        
         temp_tss1 = []
@@ -104,29 +124,40 @@ def resample_test(df_scw, df_scw1, df_scw2, df_scw3, df_null, df_null1, df_null2
 if __name__ == "__main__":
 
 	#Load SCW/null information (hourly)
-	melb_scw, melb_null = load_scws("2")
-	bris_scw, bris_null = load_scws("66")
-	namoi_scw, namoi_null = load_scws("69")
-	perth_scw, perth_null = load_scws("70")
-	syd_scw, syd_null = load_scws("71")
-	df_scw = pd.concat([melb_scw, bris_scw, namoi_scw, perth_scw, syd_scw], axis=0)
-	df_null = pd.concat([melb_null, bris_null, namoi_null, perth_null, syd_null], axis=0)
+	#melb_scw, melb_null = load_scws("2")
+	#bris_scw, bris_null = load_scws("66")
+	#namoi_scw, namoi_null = load_scws("69")
+	#perth_scw, perth_null = load_scws("70")
+	#syd_scw, syd_null = load_scws("71")
+	#df_scw = pd.concat([melb_scw, bris_scw, namoi_scw, perth_scw, syd_scw], axis=0)
+	#df_null = pd.concat([melb_null, bris_null, namoi_null, perth_null, syd_null], axis=0)
+	rids = ["68","64","8","72","75","19","73","78","49","4","40","48","2","66","69","70","71"]
+	df_scw = pd.DataFrame()
+	df_null = pd.DataFrame()
+	for rid in rids:
+	    df_scw = pd.concat([df_scw,remove_suspect_gusts(load_scws(rid))],axis=0)
+	    df_null = pd.concat([df_null,load_nulls(rid)],axis=0)    
 
 	#Separate the combined dataframe out into environmental clusters
-	df_scw1 = df_scw.query("cluster==0")
+	df_scw1 = df_scw.query("cluster==1")
 	df_scw2 = df_scw.query("cluster==2")
-	df_scw3 = df_scw.query("cluster==1")
-	df_null1 = df_null.query("cluster==0")
+	df_scw3 = df_scw.query("cluster==0")
+	df_null1 = df_null.query("cluster==1")
 	df_null2 = df_null.query("cluster==2")
-	df_null3 = df_null.query("cluster==1")
+	df_null3 = df_null.query("cluster==0")
 
 	#Calculate a range of TSS, and CSI values based on N bootstrapping. Note that the bootstrap resampling here is balanced based on under-sampling the null dataset.
 	N=1000
 	#test_vars = ["wg10","bdsd","gustex","eff_sherb","scp","t_totals"]
 	#test_vars = ["wg10","bdsd"]
-	test_vars = list(df_scw.columns[41:-6])
+	test_vars = list(df_scw.columns[43:-8])
+	
+	#For now drop "t500". Not important anyway, but is not in the files for 2019-2020, so causes script to fail.
+	test_vars = list(np.array(test_vars)[np.in1d(test_vars,"t500",invert=True)])
+    
 	tss, tss_thresh, tss1, tss_thresh1, tss2, tss_thresh2, tss3, tss_thresh3 = resample_test(df_scw, df_scw1, df_scw2, df_scw3, df_null, df_null1, df_null2, df_null3, "TSS", N, test_vars)
 	csi, csi_thresh, csi1, csi_thresh1, csi2, csi_thresh2, csi3, csi_thresh3 = resample_test(df_scw, df_scw1, df_scw2, df_scw3, df_null, df_null1, df_null2, df_null3, "CSI", N, test_vars)
+	auc, _, auc1, _, auc2, _, auc3, _ = resample_test(df_scw, df_scw1, df_scw2, df_scw3, df_null, df_null1, df_null2, df_null3, "AUC", N, test_vars)
 
 	#Calculate the same TSS and CSI for 2019-20. This is done for cross-validation of the BDSD
 	tss_cv, tss_thresh_cv,_,_,_,_,_,_ = resample_test(df_scw[pd.DatetimeIndex(df_scw.dt_utc).year>=2019],
@@ -145,6 +176,14 @@ if __name__ == "__main__":
 		 df_null1, 
 		 df_null2, 
 		 df_null3, "CSI", N, test_vars)
+	auc_cv, auc_thresh_cv,_,_,_,_,_,_ = resample_test(df_scw[pd.DatetimeIndex(df_scw.dt_utc).year>=2019], 
+		 df_scw1, 
+		 df_scw2, 
+		 df_scw3, 
+		 df_null[pd.DatetimeIndex(df_null.dt_utc).year>=2019], 
+		 df_null1, 
+		 df_null2, 
+		 df_null3, "AUC", N, test_vars)
 
 	#Save the TSS, CSI dataframes.
 	tss.to_csv("/g/data/eg3/ab4502/ExtremeWind/skill_scores/tss_era5_clusterall.csv",index=False)
@@ -157,6 +196,11 @@ if __name__ == "__main__":
 	csi2.to_csv("/g/data/eg3/ab4502/ExtremeWind/skill_scores/csi_era5_cluster2.csv",index=False)
 	csi3.to_csv("/g/data/eg3/ab4502/ExtremeWind/skill_scores/csi_era5_cluster3.csv",index=False)
 	csi_cv.to_csv("/g/data/eg3/ab4502/ExtremeWind/skill_scores/csi_era5_clusterall_cv.csv",index=False)
+	auc.to_csv("/g/data/eg3/ab4502/ExtremeWind/skill_scores/auc_era5_clusterall.csv",index=False)
+	auc1.to_csv("/g/data/eg3/ab4502/ExtremeWind/skill_scores/auc_era5_cluster1.csv",index=False)
+	auc2.to_csv("/g/data/eg3/ab4502/ExtremeWind/skill_scores/auc_era5_cluster2.csv",index=False)
+	auc3.to_csv("/g/data/eg3/ab4502/ExtremeWind/skill_scores/auc_era5_cluster3.csv",index=False)
+	auc_cv.to_csv("/g/data/eg3/ab4502/ExtremeWind/skill_scores/auc_era5_clusterall_cv.csv",index=False)
 
 	#Save the optimal threshold dataframes for TSS and CSI
 	tss_thresh.to_csv("/g/data/eg3/ab4502/ExtremeWind/skill_scores/tss_thresh_era5_clusterall.csv",index=False)

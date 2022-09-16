@@ -60,7 +60,8 @@ def era5_clustering(s06, qmean01, lr13, Umean06, f, cluster_mod):
     X = pd.DataFrame({"s06":s06_1d, "qmean01":qmean01_1d, "lr13":lr13_1d, "Umean06":Umean06_1d})
     preds = cluster_mod.predict(X).reshape(s06.shape)
     preds_new = np.copy(preds)
-    preds_new[preds==1]=2
+    preds_new[preds==0]=2
+    preds_new[preds==1]=0
     preds_new[preds==2]=1
 
     era5_cluster = xr.Dataset({"cluster":(dim, preds_new), "bdsd":(dim, f.bdsd)},\
