@@ -30,7 +30,7 @@ if __name__ == "__main__":
 	N=1000
 	#test_vars = ["wg10","bdsd","gustex","eff_sherb","scp","t_totals"]
 	#test_vars = ["wg10","bdsd"]
-	test_vars = list(df_scw.columns[43:-8])
+	test_vars = list(df_scw.columns[43:-12])
 	
 	#For now drop "t500". Not important anyway, but is not in the files for 2019-2020, so causes script to fail.
 	test_vars = list(np.array(test_vars)[np.in1d(test_vars,"t500",invert=True)])

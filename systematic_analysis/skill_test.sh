@@ -2,7 +2,7 @@
 
 #PBS -P eg3 
 #PBS -q normal
-#PBS -l walltime=24:00:00,mem=64GB 
+#PBS -l walltime=48:00:00,mem=64GB 
 #PBS -l ncpus=1
 #PBS -o /home/548/ab4502/working/ExtremeWind/jobs/messages/skill_test.o 
 #PBS -e /home/548/ab4502/working/ExtremeWind/jobs/messages/skill_test.e

@@ -9,7 +9,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 def remove_suspect_gusts(df):
-    dts = ["2010-12-14 07:03:00","2011-01-11 03:49:00","2015-12-15 23:33:00","2020-02-09 01:00:00","2020-02-09 03:18:00","2020-05-25 06:11:00"]
+    dts = ["2010-12-14 07:03:00","2011-01-11 03:49:00","2015-12-15 23:33:00","2020-02-09 01:00:00","2020-02-09 03:18:00","2020-05-25 06:11:00",
+          "2012-11-02 18:58:00","2012-12-20 21:19:00","2012-12-15 13:00:00","2012-12-29 16:15:00","2012-12-30 06:25:00","2012-12-30 18:01:00","2013-01-02 08:15:00",
+          "2013-01-05 03:36:00","2013-01-12 15:22:00","2013-02-11 07:56:00"]
     return df[np.in1d(df.dt_utc,dts,invert=True)]
 
 def load_scws(rid):
@@ -131,7 +133,7 @@ if __name__ == "__main__":
 	#syd_scw, syd_null = load_scws("71")
 	#df_scw = pd.concat([melb_scw, bris_scw, namoi_scw, perth_scw, syd_scw], axis=0)
 	#df_null = pd.concat([melb_null, bris_null, namoi_null, perth_null, syd_null], axis=0)
-	rids = ["68","64","8","72","75","19","73","78","49","4","40","48","2","66","69","70","71"]
+	rids = ["2","66","69","70","71","64","8","72","75","19","73","78","49","4","40","48","68","63","76","77"]
 	df_scw = pd.DataFrame()
 	df_null = pd.DataFrame()
 	for rid in rids:
@@ -150,7 +152,7 @@ if __name__ == "__main__":
 	N=1000
 	#test_vars = ["wg10","bdsd","gustex","eff_sherb","scp","t_totals"]
 	#test_vars = ["wg10","bdsd"]
-	test_vars = list(df_scw.columns[43:-8])
+	test_vars = list(df_scw.columns[43:-12])
 	
 	#For now drop "t500". Not important anyway, but is not in the files for 2019-2020, so causes script to fail.
 	test_vars = list(np.array(test_vars)[np.in1d(test_vars,"t500",invert=True)])

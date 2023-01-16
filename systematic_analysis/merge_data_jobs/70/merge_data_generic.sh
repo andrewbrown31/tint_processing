@@ -2,13 +2,15 @@
 
 #PBS -P eg3 
 #PBS -q normal
-#PBS -l walltime=02:00:00,mem=64GB 
+#PBS -l walltime=04:00:00,mem=64GB 
 #PBS -l ncpus=8
 #PBS -o /home/548/ab4502/working/ExtremeWind/jobs/messages/merge_data_70_YYYY.o
 #PBS -e /home/548/ab4502/working/ExtremeWind/jobs/messages/merge_data_70_YYYY.e
-#PBS -l storage=gdata/eg3+gdata/rq0+scratch/w40+gdata/rt52
+#PBS -l storage=gdata/eg3+gdata/rq0+scratch/w40+gdata/rt52+gdata/hh5
 
-source activate wrfpython3.6
+#source activate wrfpython3.6
+module use /g/data/hh5/public/modules
+module load conda/analysis3
 
 STATE="wa"
 RID="70"

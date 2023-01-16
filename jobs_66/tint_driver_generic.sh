@@ -2,7 +2,7 @@
 
 #PBS -P eg3 
 #PBS -q normal
-#PBS -l walltime=02:00:00,mem=64GB 
+#PBS -l walltime=10:00:00,mem=64GB 
 #PBS -l ncpus=1
 #PBS -o /home/548/ab4502/working/ExtremeWind/jobs/messages/tint_driver_66_YYYYMMDDHHMM1.o 
 #PBS -e /home/548/ab4502/working/ExtremeWind/jobs/messages/tint_driver_66_YYYYMMDDHHMM1.e

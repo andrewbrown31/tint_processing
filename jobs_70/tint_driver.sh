@@ -1,7 +1,7 @@
 #!/bin/bash
 
-for y in $(seq 2010 1 2020); do
- for m in $(seq -w 1 1 12); do
+for y in $(seq 2019 1 2019); do
+ for m in $(seq -w 10 1 10); do
 
  d=$y-$m-01
  e=$(date -d "$d + 1 month")

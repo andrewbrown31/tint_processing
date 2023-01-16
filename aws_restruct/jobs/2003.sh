@@ -2,7 +2,7 @@
 
 #PBS -P eg3 
 #PBS -q normal
-#PBS -l walltime=06:00:00,mem=64GB 
+#PBS -l walltime=12:00:00,mem=64GB 
 #PBS -l ncpus=1
 #PBS -o /home/548/ab4502/working/ExtremeWind/jobs/messages/aws_restruct_2003.o 
 #PBS -e /home/548/ab4502/working/ExtremeWind/jobs/messages/aws_restruct_2003.e 
@@ -11,5 +11,5 @@
 #Set up conda/shell environments 
 source activate radar
 
-python /home/548/ab4502/working/observations/aws_restruct/aws_restruct.py -y 2003
+python /home/548/ab4502/working/observations/tint_processing/aws_restruct/aws_restruct.py -y 2003
 

@@ -1,0 +1,14 @@
+56883303.gadi-pbs
+
+======================================================================================
+                  Resource Usage on 2022-09-01 16:41:51:
+   Job Id:             56883261.gadi-pbs
+   Project:            eg3
+   Exit Status:        0
+   Service Units:      0.00
+   NCPUs Requested:    1                      NCPUs Used: 1               
+                                           CPU Time Used: 00:00:00                                   
+   Memory Requested:   500.0MB               Memory Used: 6.63MB          
+   Walltime requested: 10:00:00            Walltime Used: 00:00:08        
+   JobFS requested:    100.0MB                JobFS used: 0B              
+======================================================================================

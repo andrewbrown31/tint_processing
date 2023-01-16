@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for y in $(seq 2006 1 2020); do
+for y in $(seq 2019 1 2020); do
  for m in $(seq -w 1 1 12); do
 
  d=$y-$m-01

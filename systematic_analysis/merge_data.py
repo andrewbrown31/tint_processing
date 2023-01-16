@@ -90,6 +90,14 @@ def subset_era5(era5, stn_lat, stn_lon, y, x):
 	era5_subset = era5.sel({"lon":unique_lons, "lat":unique_lats})
 	return era5_subset, rad_lats, rad_lons
 
+def shift_wg10_time(df):
+    
+    temp_wg10 = df[["time","stn_id","wg10"]].rename(columns={"wg10":"wg10_2"})
+    temp_wg10["time"] = temp_wg10["time"] + dt.timedelta(hours=-1)
+    merged = pd.merge(df,temp_wg10[["stn_id","time","wg10_2"]],on=["stn_id","time"],how="outer").dropna(subset="ml_cape").fillna(method="pad")
+    
+    return merged
+
 def extract_era5_df(era5_subset, rad_lats, rad_lons,stn_list, summary):
 	temp_df = pd.DataFrame()
 	for i in tqdm.tqdm(np.arange(len(stn_list))):
@@ -290,6 +298,11 @@ def load_tint_aws_era5_lightning(fid, state, summary="max"):
 	print("extracting data...")
 	#Extract point data within 50 km of each station (mean, min or max)
 	era5_df = extract_era5_df(era5_subset, rad_lats, rad_lons,stn_list,summary)
+
+	#Shift the WG10 column backwards by one hour, seeing as this variable is defined as "maximum in previous hour"
+	#Call this shifted wg10 "wg10_2".
+	#Because we don't have the first hour of the next month here, we simply pad these values using the last observation
+	era5_df = shift_wg10_time(era5_df)
 
 	#Add lat lon info
 	era5_lat = []; era5_lon = []
