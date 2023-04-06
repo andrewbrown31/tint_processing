@@ -29,12 +29,12 @@ def return_drop_list(state):
 	elif state=="wa":
 		return [9091,9193,9255,9256]
 	elif state=="sa":
-		return []
+		return [18115]
 	elif state=="vic_nsw":
 		#This is only really relevant for Yarrawonga radar that's on the border
 		return [83084, 86376, 79103, 82139, 86381, 85291, 83024, 83085, 79101, 86344, 56238, 72161, 56243, 63292, 70349, 62100, 71075, 71032, 200288, 200839, 66196]
 	elif state=="tas":
-		return [94087]
+		return [94087,200838,98017,99005]
 	elif state=="nt":
 		return [14056, 14274]
 

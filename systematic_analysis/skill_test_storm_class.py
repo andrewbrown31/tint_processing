@@ -1,17 +1,18 @@
 from skill_test import *
 
-def resample_test(df_scw, df_null,metric, N, var_list):
+def resample_test(df_scw, df_null,metric, N, var_list, n_samples):
 
     output_skill = pd.DataFrame(columns=var_list)
     output_thresh = pd.DataFrame(columns=var_list)    
-
 
     for v in tqdm.tqdm(var_list):
         temp_tss = []
         temp_t = []        
         for n in (np.arange(N)):
-            resampled = resample(df_null,replace=True,n_samples=df_scw.shape[0],random_state=n)
-            tss, t = skill_test(df_scw,resampled,v,scores=metric)
+            resampled_null = resample(df_null[[v,"scw"]],replace=True,n_samples=int(df_null.shape[0] * n_samples),random_state=n)
+            resampled_scw = resample(df_scw[[v,"scw"]],replace=True,n_samples=df_scw.shape[0],random_state=n)
+            auc_greater = (resampled_scw[v].mean() >= resampled_null[v].mean())
+            tss, t = skill_test(resampled_scw,resampled_null,v,scores=metric,auc_greater=auc_greater)
             temp_tss.append(tss)
             temp_t.append(t)            
             
@@ -52,6 +53,7 @@ if __name__ == "__main__":
 	df_scw = pd.DataFrame()
 	df_null = pd.DataFrame()
 	for rid in rids:
+	    print(rid)
 	    df_scw = pd.concat([df_scw,remove_suspect_gusts(load_scws(rid)).query("in10km==1")],axis=0)
 	    df_null = pd.concat([df_null,load_nulls(rid).query("in10km==1")],axis=0)    
 
@@ -75,27 +77,33 @@ if __name__ == "__main__":
 
 	#Calculate a range of TSS, and CSI values based on N bootstrapping. Note that the bootstrap resampling here is balanced based on under-sampling the null dataset.
 	N=1000
-	#test_vars = ["wg10","bdsd","gustex","eff_sherb","scp","t_totals"]
-	#test_vars = ["wg10","bdsd"]
+	#test_vars = ["rhmin01","bdsd"]
 	test_vars = list(df_scw.columns[43:-12])
 	
 	#For now drop "t500". Not important anyway, but is not in the files for 2019-2020, so causes script to fail.
 	test_vars = list(np.array(test_vars)[np.in1d(test_vars,"t500",invert=True)])
 
 
-	for score in ["auc","tss","csi"]:
+	n_samples=0.1
+	for score in ["auc"]:
 		for temp_df_null, temp_df_scw, temp_class in zip((df_null_linear,df_null_nonlinear,df_null_cell,df_null_cellcluster,df_null_supercell,df_null_embeddedsup),\
 						    (df_scw_linear,df_scw_nonlinear,df_scw_cell,df_scw_cellcluster,df_scw_supercell,df_scw_embeddedsup),\
 						    ("linear","nonlinear","cell","cellcluster","supercell","embeddedsup")):
 
-			temp_score, temp_score_thresh = resample_test(temp_df_scw, temp_df_null, score.upper(), N, test_vars)
-			temp_score_cv, temp_score_thresh_cv = resample_test(temp_df_scw[pd.DatetimeIndex(temp_df_scw.dt_utc).year>=2019], temp_df_null[pd.DatetimeIndex(temp_df_null.dt_utc).year>=2019], score.upper(), N, ["bdsd"])
+			temp_score, temp_score_thresh = resample_test(temp_df_scw, temp_df_null, score.upper(), N, test_vars, n_samples)
+			temp_score_cv, temp_score_thresh_cv = resample_test(temp_df_scw[pd.DatetimeIndex(temp_df_scw.dt_utc).year>=2019], temp_df_null[pd.DatetimeIndex(temp_df_null.dt_utc).year>=2019], score.upper(), N, ["bdsd"], n_samples)
 
 			temp_score.to_csv("/g/data/eg3/ab4502/ExtremeWind/skill_scores/"+score+"_era5_"+temp_class+".csv",index=False)
 			temp_score_cv.to_csv("/g/data/eg3/ab4502/ExtremeWind/skill_scores/"+score+"_era5_"+temp_class+"_cv.csv",index=False)
-	    
-			if score != "auc":
-				temp_score_thresh.to_csv("/g/data/eg3/ab4502/ExtremeWind/skill_scores/"+score+"_thresh_era5_"+temp_class+".csv",index=False)
-				temp_score_thresh_cv.to_csv("/g/data/eg3/ab4502/ExtremeWind/skill_scores/"+score+"_thresh_era5_"+temp_class+"_cv.csv",index=False)
+
+			if score == "auc":
+				auc_full = pd.DataFrame([skill_test(temp_df_scw,temp_df_null,v,"AUC",auc_greater=(temp_df_scw[v].mean() >= temp_df_null[v].mean()))[0] for v in test_vars],index=test_vars,columns=["auc"]) 
+				auc_full_cv = pd.DataFrame([skill_test(temp_df_scw[pd.DatetimeIndex(temp_df_scw.dt_utc).year>=2019],temp_df_null[pd.DatetimeIndex(temp_df_null.dt_utc).year>=2019],v,"AUC",auc_greater=(temp_df_scw[v].mean() >= temp_df_null[v].mean()))[0] for v in test_vars],index=test_vars,columns=["auc"])
+				auc_full.to_csv("/g/data/eg3/ab4502/ExtremeWind/skill_scores/"+score+"_full_era5_"+temp_class+".csv",index=True)
+				auc_full_cv.to_csv("/g/data/eg3/ab4502/ExtremeWind/skill_scores/"+score+"_full_era5_"+temp_class+"_cv.csv",index=True)
+
+			#if score != "auc":
+			#	temp_score_thresh.to_csv("/g/data/eg3/ab4502/ExtremeWind/skill_scores/"+score+"_thresh_era5_"+temp_class+".csv",index=False)
+			#	temp_score_thresh_cv.to_csv("/g/data/eg3/ab4502/ExtremeWind/skill_scores/"+score+"_thresh_era5_"+temp_class+"_cv.csv",index=False)
 
 

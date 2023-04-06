@@ -51,9 +51,9 @@ def load_stn_info(state):
 
 	if state == "vic_nsw":
 		stn_info1 = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/vic_one_min_gust/HD01D_StnDet_*.txt")[0],\
-			names=names, header=0)
+			names=names, header=None)
 		stn_info2 = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/nsw_one_min_gust/HD01D_StnDet_*.txt")[0],\
-			names=names, header=0)
+			names=names, header=None)
 		stn_info = pd.concat([stn_info1, stn_info2], axis=0)
 	elif state=="nt":
 		stn_info = pd.concat(\
@@ -65,7 +65,7 @@ def load_stn_info(state):
 		    sort_values("stn_name")
 	else:
 		stn_info = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/"+state+"_one_min_gust/HD01D_StnDet_*.txt")[0],\
-			names=names, header=0)
+			names=names, header=None)
 	return stn_info
 
 def load_era5(fid):
@@ -76,15 +76,15 @@ def load_era5(fid):
 	x,y = np.meshgrid(era5_lon,era5_lat)
 	return era5, x, y
 
-def subset_era5(era5, stn_lat, stn_lon, y, x):
+def subset_era5(era5, stn_lat, stn_lon, y, x, r=50):
 	dist_km = []
 	rad_lats = []
 	rad_lons = []
 	for i in np.arange(len(stn_lat)):
 		dists = latlon_dist(stn_lat[i], stn_lon[i], y, x)
 		dist_km.append(dists)
-		rad_lats.append(y[dists<50])
-		rad_lons.append(x[dists<50])
+		rad_lats.append(y[dists<r])
+		rad_lons.append(x[dists<r])
 	unique_lons = np.unique(np.concatenate(rad_lons))
 	unique_lats = np.unique(np.concatenate(rad_lats))
 	era5_subset = era5.sel({"lon":unique_lons, "lat":unique_lats})
@@ -110,8 +110,10 @@ def extract_era5_df(era5_subset, rad_lats, rad_lons,stn_list, summary):
 			points = era5_points.mean("points").to_dataframe()
 		elif summary=="min":
 			points = era5_points.min("points").to_dataframe()
+		elif summary=="sum":
+			points = era5_points.sum("points").to_dataframe()
 		else:
-			raise ValueError("SUMMARY ARGUMENT NEEDS TO BE: max, min, or mean")
+			raise ValueError("SUMMARY ARGUMENT NEEDS TO BE: max, min, sum, or mean")
 		points["points"]=i
 		temp_df = pd.concat([temp_df, points], axis=0)
 
