@@ -100,8 +100,6 @@ def driver(rid, tz):
 		  "minor_axis_length","local_max",
 		  "max_alt","azi_shear60"]
 
-    lightning_list = ["Lightning_observed"]
-
     renames = {
 	     'Umean06': "Umean06",
 	     'Umean01': "Umean01",
@@ -175,11 +173,11 @@ def driver(rid, tz):
     df_nulls.loc[df_nulls["in10km"]==0,np.array(radar_list)[~np.in1d(radar_list,["in10km","rid"])]] = np.nan		
 
     if temp_events.shape[0] > 0:
-        pd.concat([df_events[(gust_list + lightning_list + radar_list + ind_list)].rename(columns=renames),
-		    df_nulls[(gust_list + lightning_list + radar_list + ind_list)].rename(columns=renames)],
+        pd.concat([df_events[(gust_list + radar_list + ind_list)].rename(columns=renames),
+		    df_nulls[(gust_list + radar_list + ind_list)].rename(columns=renames)],
 	axis=0).sort_values("dt_utc").to_csv("/scratch/eg3/ab4502/scw_data_pub/gust_observations_"+rid+".csv")
     else:
-		    df_nulls[(gust_list + lightning_list + radar_list + ind_list)].rename(columns=renames).sort_values("dt_utc").to_csv("/scratch/eg3/ab4502/scw_data_pub/gust_observations_"+rid+".csv")        
+		    df_nulls[(gust_list + radar_list + ind_list)].rename(columns=renames).sort_values("dt_utc").to_csv("/scratch/eg3/ab4502/scw_data_pub/gust_observations_"+rid+".csv")        
 
 if __name__ == "__main__":
 

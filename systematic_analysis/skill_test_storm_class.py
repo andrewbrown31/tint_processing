@@ -56,7 +56,11 @@ if __name__ == "__main__":
 	    print(rid)
 	    df_scw = pd.concat([df_scw,remove_suspect_gusts(load_scws(rid)).query("in10km==1")],axis=0)
 	    df_null = pd.concat([df_null,load_nulls(rid).query("in10km==1")],axis=0)    
-
+	
+	#Remove data without azi_shear60
+	df_scw = df_scw[~df_scw.azi_shear60.isnull()]
+	df_null = df_null[~df_null.azi_shear60.isnull()]    
+	    
 	#Separate the combined dataframe out into storm classes
 	#Also create two "null" datasets. One for all non-SCW occurrences, one for all non-SCW occurences with a radar object within 10 km
 	df_scw = assign_storm_class(df_scw)
