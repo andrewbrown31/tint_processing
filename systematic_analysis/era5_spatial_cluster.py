@@ -65,7 +65,7 @@ def era5_clustering(s06, qmean01, lr13, Umean06, f, cluster_mod):
     preds_new[preds==2]=1
 
     era5_cluster = xr.Dataset({"cluster":(dim, preds_new), "bdsd":(dim, f.bdsd.values)},\
-			coords={"lat":(("lat"), f.lat.values), "lon":(("lon"), f.lon.values), "time":(("time"), f.time.values)}).chunk(f.chunks)
+			coords={"lat":(("lat"), f.lat.values), "lon":(("lon"), f.lon.values), "time":(("time"), f.time.values)}).chunk({"time":"auto"})
 
     return era5_cluster
 
