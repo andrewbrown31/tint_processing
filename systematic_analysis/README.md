@@ -1,4 +1,4 @@
-# Log
+# Log for Long-Term Observational Characteristics of Different Severe Convective Wind Types around Australia
 
 This log details the construction of results for Brown et al. (https://doi.org/10.1175/WAF-D-23-0069.1), with figure numbers referenced below from that study. It is noted that this is a working repository, and may be updated after this publication (with the version at submission available [here](https://github.com/andrewbrown31/tint_processing/tree/278062c482aaf6b2bfe7c9bc6008d8179678aedd).
 
@@ -22,3 +22,26 @@ This log details the construction of results for Brown et al. (https://doi.org/1
 
 ### Figure 9 and 10
 Plotting done in [auc_scores.ipynb](auc_scores.ipynb). Skill scores calculated using [skill_test.py](skill_test.py), [skill_test_in10km_nulls.py](skill_test_in10km_nulls.py), and [skill_test_storm_class.py](skill_test_storm_class.py) (depending on what are used for events/non-events)
+
+# Log for Severe Convective Winds in Australia and Their Sensitivity to Global Warming. Section 6: Australian climatology of severe convective wind environments for different event types, and future projections based on global climate model data (in preparation)
+
+This log details code used in the production of thesis results (in preparation)
+
+## Generating data
+
+1) **Process ERA5 pressure level data on rt52 into convective diagnostics** using the [`era5_wrfpython/`](https://github.com/andrewbrown31/SCW-analysis/tree/master/jobs/era5_wrfpython) directory in the [SCW-analysis](https://github.com/andrewbrown31/SCW-analysis/tree/master) repository.
+2) **Perform severe convective wind environment (SCW) clustering on gridded ERA5 data** using the diagnostics calculated in step 1, and the [clustering model of Brown et al. (2023)](../auto_case_driver/kmeans_and_cluster_eval.ipynb). This step uses the [`era5_spatial_cluster.py`](https://github.com/andrewbrown31/tint_processing/blob/main/systematic_analysis/era5_spatial_cluster.py) script, that is submitted to the Gadi job scheduler using [`era5_spatial_cluster.sh`](https://github.com/andrewbrown31/tint_processing/blob/main/systematic_analysis/era5_spatial_cluster.sh). The script also uses the statistical diagnostic of Brown and Dowdy (2021) to classify if the environment is favourable for a SCW event. The output of this step is monthly netcdf files, with the fraction of 6-hourly time steps belonging to each type of SCW environment, and the fraction of time steps that are favourable for an SCW event.
+3) **Process CMIP5 sub-daily pressure level data into convective diagnostic for SCW analysis**, including a bias correction process following Brown and Dowdy (2021). This code is in a [separate repository](https://github.com/andrewbrown31/SCW-analysis/tree/master) with a log [here](https://github.com/andrewbrown31/SCW-analysis/blob/master/cmip/log.md).
+4) **Repeat Step 2 but for the processed CMIP5 diagnostics calculated in Step 3**. This uses [`cmip_clustering.py`](https://github.com/andrewbrown31/tint_processing/blob/main/systematic_analysis/cmip_clustering.py), submitted to the Gadi job queue using [`cmip_clustering.sh`](https://github.com/andrewbrown31/tint_processing/blob/main/systematic_analysis/cmip_clustering.sh).
+
+## Figures
+
+Figures for ERA5 climatology and trends are created [here](https://github.com/andrewbrown31/tint_processing/blob/main/systematic_analysis/era5_cluster_predict.ipynb).
+
+Figures for CMIP5 ensemble climatology and trends are created [here](https://github.com/andrewbrown31/tint_processing/blob/main/systematic_analysis/cmip_clustering.ipynb).
+
+### References 
+
+Brown, A., & Dowdy, A. (2021). Severe Convective Wind Environments and Future Projected Changes in Australia. Journal of Geophysical Research: Atmospheres, 126(16), 1–17. https://doi.org/10.1029/2021JD034633
+
+Brown, A., Dowdy, A., Lane, T. P., & Hitchcock, S. (2023). Types of Severe Convective Wind Events in Eastern Australia. Monthly Weather Review, 151(2), 419–448. https://doi.org/10.1175/MWR-D-22-0096.1
