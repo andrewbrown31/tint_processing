@@ -20,6 +20,8 @@ For ERA5, diagnostics associated with synoptic-scale systems for 2005-2018 are c
 ### Clustering analysis
 Firstly, TINT-derived radar statistics (see "Case selection" section of paper) are extracted and saved for each SCW case, in [this notebook](https://github.com/andrewbrown31/tint_processing/blob/main/auto_case_driver/scw_cases_tint_stats.ipynb). Next, k-means clustering is performed [here](https://github.com/andrewbrown31/tint_processing/blob/main/auto_case_driver/kmeans_and_cluster_eval.ipynb), and radar statistics and environmental conditions for each cluster is plotted (Figs. 11 and 12). The clustering and radar analysis are brought together in [this notebook](https://github.com/andrewbrown31/tint_processing/blob/main/auto_case_driver/output_stats_table.ipynb) to create Table 1. Finally composite soundings for each cluster are plotted [here](https://github.com/andrewbrown31/tint_processing/blob/main/auto_case_driver/composite_soundings.ipynb), as well as individually for each case.
 
+Clustering input from ERA5 (for repeating the clustering), and output for the set of 36 cases, is available in [this directory](https://github.com/andrewbrown31/tint_processing/tree/main/cluster_data). The directory also includes the sklearn k-means model as a .pkl file.
+
 ### Appendices
 #### Azimuthal shear
 [Shaded time-height plot of azimuthal shear](https://github.com/andrewbrown31/tint_processing/blob/main/auto_case_driver/scw_cases_tint_stats.ipynb) for cases where azimuthal shear is greater than 0.004 s^-1
