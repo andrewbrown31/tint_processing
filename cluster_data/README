@@ -1,0 +1,20 @@
+This directory contains a .csv file and a .py file that can be used to reconstruct severe convective wind environment kmeans clustering. Note that because the kmeans clustering is randomly initialised, for exact reproducability the following python package versions may be required:
+
+System:
+    python: 3.9.4 | packaged by conda-forge | (default, May 10 2021, 22:13:33)  [GCC 9.3.0]
+executable: /g/data/eg3/ab4502/miniconda3/envs/radar/bin/python
+   machine: Linux-4.18.0-553.22.1.el8.nci.x86_64-x86_64-with-glibc2.28
+
+Python dependencies:
+          pip: 21.1.1
+   setuptools: 49.6.0.post20210108
+      sklearn: 0.24.2
+        numpy: 1.20.2
+        scipy: 1.6.3
+       Cython: None
+       pandas: 1.2.4
+   matplotlib: 3.4.2
+       joblib: 1.1.0
+threadpoolctl: 3.1.0
+
+Built with OpenMP: True
