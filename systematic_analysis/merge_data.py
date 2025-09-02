@@ -50,21 +50,21 @@ def load_stn_info(state):
 			"hgt_asl", "hgt_asl_baro", "wmo_idx", "y1", "y2", "comp%", "Y%", "N%", "W%", "S%", "I%", "#"]
 
 	if state == "vic_nsw":
-		stn_info1 = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/vic_one_min_gust/HD01D_StnDet_*.txt")[0],\
+		stn_info1 = pd.read_csv(glob.glob("/g/data/w40/ab4502/ExtremeWind/obs/aws/vic_one_min_gust/HD01D_StnDet_*.txt")[0],\
 			names=names, header=None)
-		stn_info2 = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/nsw_one_min_gust/HD01D_StnDet_*.txt")[0],\
+		stn_info2 = pd.read_csv(glob.glob("/g/data/w40/ab4502/ExtremeWind/obs/aws/nsw_one_min_gust/HD01D_StnDet_*.txt")[0],\
 			names=names, header=None)
 		stn_info = pd.concat([stn_info1, stn_info2], axis=0)
 	elif state=="nt":
 		stn_info = pd.concat(\
-		    [pd.read_csv(f, names=names, header=None) for f in glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/nt_one_min_gust/HD01D_StnDet_*.txt")],axis=0).\
+		    [pd.read_csv(f, names=names, header=None) for f in glob.glob("/g/data/w40/ab4502/ExtremeWind/obs/aws/nt_one_min_gust/HD01D_StnDet_*.txt")],axis=0).\
 		    sort_values("stn_name")
 	elif state=="tas":
 		stn_info = pd.concat(\
-		    [pd.read_csv(f, names=names, header=None) for f in glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/tas_one_min_gust/HD01D_StnDet_*.txt")],axis=0).\
+		    [pd.read_csv(f, names=names, header=None) for f in glob.glob("/g/data/w40/ab4502/ExtremeWind/obs/aws/tas_one_min_gust/HD01D_StnDet_*.txt")],axis=0).\
 		    sort_values("stn_name")
 	else:
-		stn_info = pd.read_csv(glob.glob("/g/data/eg3/ab4502/ExtremeWind/obs/aws/"+state+"_one_min_gust/HD01D_StnDet_*.txt")[0],\
+		stn_info = pd.read_csv(glob.glob("/g/data/w40/ab4502/ExtremeWind/obs/aws/"+state+"_one_min_gust/HD01D_StnDet_*.txt")[0],\
 			names=names, header=None)
 	return stn_info
 
